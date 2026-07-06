@@ -9,8 +9,14 @@ REM  Los RADARES del BORA (jueces altas/bajas + Presidencia BCRA) NO van aca:
 REM  corren solos en GitHub Actions y dejan sus CSV puente en el repo. Este
 REM  pipeline los lee del repo (variable ITR_RADAR_CSV_URL ya configurada).
 REM
-REM  Equivalente Linux para el futuro servidor en la nube: correr_mensual.sh
+REM  Equivalente Linux (para el server con IP AR): correr_mensual.sh
 REM  Orden: scrapers -> padron judicial -> cobertura -> ensamblar -> QA -> graficos.
+REM
+REM  QUE MES CALCULA (HASTA):
+REM    correr_mensual.bat              -> HASTA = mes en curso (PROVISIONAL)
+REM    correr_mensual.bat 2026-06      -> cierra un mes puntual (YYYY-MM)
+REM  Solo CALCULA el indice (sin commit ni publicacion automatica): el equipo
+REM  revisa las alertas de QA y publica.
 REM ============================================================================
 setlocal
 cd /d "%~dp0"
@@ -19,10 +25,14 @@ REM --- Rango ---
 REM  DESDE    = colchon: arranca 1 anio antes para que el suavizado de 12m este
 REM             COMPLETO al inicio publicado (ene-2024).  No se publica el tramo 2023.
 REM  PUBLICAR = inicio publicado = gestion Milei (enero 2024), ya suavizado.
-REM  HASTA    = mes en curso.
+REM  HASTA    = arg %1 (mes a cerrar, YYYY-MM) si se pasa; si no, el mes en curso.
 set "DESDE=2023-01"
 set "PUBLICAR=2024-01"
-for /f %%i in ('powershell -NoProfile -Command "(Get-Date).ToString('yyyy-MM')"') do set "HASTA=%%i"
+if not "%~1"=="" (
+  set "HASTA=%~1"
+) else (
+  for /f %%i in ('powershell -NoProfile -Command "(Get-Date).ToString('yyyy-MM')"') do set "HASTA=%%i"
+)
 echo ============================================================
 echo  ITR - corrida mensual   rango: %DESDE%  ..  %HASTA%
 echo ============================================================
@@ -78,8 +88,8 @@ echo.
 echo ============================================================
 echo  LISTO.  Indice: output\itr_mensual.csv
 echo          Alertas QA: output\_alertas_validacion.md
-echo  Nota: el mes en curso sale PROVISIONAL. Para el titular cerrado,
-echo        reensambla con  --hasta  del mes anterior.
+echo  Nota: sin arg, el mes en curso sale PROVISIONAL. Para el titular
+echo        cerrado, corre con el mes:  correr_mensual.bat AAAA-MM
 echo ============================================================
 pause
 endlocal

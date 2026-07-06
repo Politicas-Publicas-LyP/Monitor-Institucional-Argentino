@@ -1,31 +1,60 @@
 #!/usr/bin/env bash
 # ============================================================================
-#  ITR - PIPELINE MENSUAL COMPLETO  (Linux / futuro servidor en la nube)
+#  ITR - PIPELINE MENSUAL COMPLETO  (Linux / servidor)
 # ----------------------------------------------------------------------------
 #  Equivalente de correr_mensual.bat. Requiere EGRESS con IP ARGENTINA:
-#  datos.jus, DGSIAF y BCRA bloquean IPs del exterior/datacenter. (Esa es la
-#  incognita abierta del deploy cloud; ver AGENTS.md y Documento de Mejoras.)
+#  datos.jus, DGSIAF y BCRA bloquean IPs del exterior/datacenter. (Por eso el
+#  server de la corrida mensual debe tener IP AR; ver AGENTS.md y el runbook
+#  Documentos/ITR — Runbook de la corrida mensual.md)
 #
 #  Los RADARES del BORA (jueces altas/bajas + Presidencia BCRA) corren en
 #  GitHub Actions y dejan sus CSV puente en el repo; este pipeline los lee de
 #  ahi (variable de entorno ITR_RADAR_CSV_URL).
 #
-#  Pensado para cron/CI: DESDE, HASTA y PY se pueden pasar por entorno.
-#  Uso:   ./correr_mensual.sh        (HASTA = mes en curso)
-#         HASTA=2026-05 ./correr_mensual.sh
+#  QUE MES CALCULA (HASTA):
+#    ./correr_mensual.sh                 -> HASTA = mes en curso (PROVISIONAL)
+#    ./correr_mensual.sh 2026-06         -> cierra un mes puntual (YYYY-MM)
+#    HASTA=2026-06 ./correr_mensual.sh   -> idem, por entorno
+#    CERRAR_ANTERIOR=1 ./correr_mensual.sh  -> cierra el mes anterior (para el cron)
+#
+#  AUTOMATIZACION (server con IP AR). Cerrar el mes anterior el dia 3 de cada
+#  mes, 06:00, y dejar el log:
+#    crontab -e  ->
+#    0 6 3 * *  CERRAR_ANTERIOR=1 /ruta/al/repo/correr_mensual.sh >> /var/log/itr.log 2>&1
+#  Solo CALCULA el indice (sin commit ni publicacion automatica): el equipo
+#  revisa las alertas de QA y publica. Devuelve exit!=0 si algun paso fallo.
 # ============================================================================
 set -uo pipefail
 cd "$(dirname "$0")"
 
 DESDE="${DESDE:-2023-01}"        # colchon: 1 anio antes para suavizado 12m completo (no se publica)
 PUBLICAR="${PUBLICAR:-2024-01}"  # inicio publicado = gestion Milei, ya suavizado
-HASTA="${HASTA:-$(date +%Y-%m)}"
+# HASTA: prioridad = arg posicional $1 > env HASTA > (CERRAR_ANTERIOR ? mes anterior) > mes en curso.
+if [ "${1:-}" != "" ]; then
+  HASTA="$1"
+elif [ "${HASTA:-}" != "" ]; then
+  HASTA="$HASTA"
+elif [ "${CERRAR_ANTERIOR:-}" = "1" ]; then
+  HASTA="$(date -d "$(date +%Y-%m-01) -1 day" +%Y-%m)"   # ultimo dia del mes pasado -> YYYY-MM
+else
+  HASTA="$(date +%Y-%m)"
+fi
+if ! echo "$HASTA" | grep -Eq '^[0-9]{4}-[0-9]{2}$'; then
+  echo "ERROR: HASTA invalido ('$HASTA'). Formato esperado YYYY-MM." >&2; exit 3
+fi
 PY="${PY:-python3}"
 mkdir -p output
 LOG="output/_corrida_mensual_$(date +%Y%m%d_%H%M%S).log"
 echo "ITR - corrida mensual | rango: $DESDE .. $HASTA | log: $LOG" | tee "$LOG"
 
-run() { echo -e "\n### $*" | tee -a "$LOG"; "$@" >>"$LOG" 2>&1 || echo "  (FALLO: $* — sigue)" | tee -a "$LOG"; }
+FALLOS=0
+run() {
+  echo -e "\n### $*" | tee -a "$LOG"
+  if ! "$@" >>"$LOG" 2>&1; then
+    echo "  (FALLO: $* — sigue)" | tee -a "$LOG"
+    FALLOS=$((FALLOS+1))
+  fi
+}
 
 echo "== EJECUTIVO ==" | tee -a "$LOG"
 run "$PY" 01_Poder_Ejecutivo/scraper_01_dnu_leyes.py        --desde "$DESDE" --hasta "$HASTA"
@@ -64,4 +93,9 @@ run "$PY" 00_Comun/validar.py
 run "$PY" 00_Comun/graficar_itr.py
 
 echo "LISTO. Indice: output/itr_mensual.csv | Alertas QA: output/_alertas_validacion.md" | tee -a "$LOG"
-echo "(El mes en curso sale PROVISIONAL; para el titular cerrado, reensamblar con HASTA del mes anterior.)" | tee -a "$LOG"
+echo "(El mes en curso sale PROVISIONAL; para el titular cerrado, correr con el mes cerrado: ./correr_mensual.sh AAAA-MM)" | tee -a "$LOG"
+if [ "$FALLOS" -gt 0 ]; then
+  echo "ATENCION: $FALLOS paso(s) fallaron. Revisar el log: $LOG" | tee -a "$LOG"
+  exit 1
+fi
+echo "OK: todos los pasos corrieron sin error." | tee -a "$LOG"

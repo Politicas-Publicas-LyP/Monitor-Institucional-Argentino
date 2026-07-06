@@ -33,6 +33,12 @@ Eje 20%. Cobertura = independencia (titularidad) + funcional (vacantes sin cubri
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-07-06 — Radar de bajas verificado en producción: el workflow de GitHub Actions detectó
+  las dos renuncias del BORA del 03-jul-2026 (Decreto 570/2026, Jueza Civil N° 58 CABA; Decreto
+  569/2026, TOF N° 5 San Martín), ambas confianza ALTA, y las commiteó a `bajas_jueces.csv`
+  (commit `20e8fd4`). Nota operativa: la corrida programada de las 09:30 ART no las había subido;
+  entraron con una corrida posterior. Revisar la fiabilidad del cron de Actions (a veces se
+  retrasa/saltea); pendiente evaluar un horario de respaldo o chequeo de "última fecha procesada".
 - 2026-06-25 — Padrón judicial vivo creado y calibrado (matching por tokens+número; sinónimo CABA; parser del cuerpo del BORA).
 - 2026-06-25 — Cobertura: override de STOCK estimado del mes corriente.
 - 2026-06-25 — Verificado que las renuncias/ceses de jueces existen en el BORA (decretos 529/2025, 530/2025, etc.).
