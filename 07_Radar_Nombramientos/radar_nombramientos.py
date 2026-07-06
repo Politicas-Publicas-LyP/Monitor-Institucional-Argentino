@@ -1,10 +1,10 @@
 """
-ITR — Radar de Nombramientos Judiciales (Boletín Oficial)
+MIA — Radar de Nombramientos Judiciales (Boletín Oficial)
 =========================================================
 Radar INDEPENDIENTE (no pisa el Radar de Desregulación). Escanea la Primera Sección del
 Boletín Oficial y detecta los DECRETOS DE DESIGNACIÓN DE JUECES TITULARES (nombramiento del
 Poder Ejecutivo con acuerdo del Senado, art. 99 inc. 4 CN). Le da CADENCIA al flujo de
-nombramientos del eje Judicial del ITR, que de otro modo depende del dataset de magistrados
+nombramientos del eje Judicial del MIA, que de otro modo depende del dataset de magistrados
 (que se actualiza ~cada 2 años).
 
 CÓMO LEE EL BORA
@@ -20,7 +20,7 @@ SALIDA — puente con el índice: append idempotente a  output/nombramientos_jue
 (fecha_deteccion, fecha_publicacion, tipo, organo, confianza, motivo, titulo, url).
 El scraper de Cobertura Judicial lo lee y toma max(fecha dataset, fecha radar) para el flujo.
 
-GOBERNANZA (línea no-IA del ITR): el radar es ALERTA/insumo. Las filas ALTA son designaciones
+GOBERNANZA (línea no-IA del MIA): el radar es ALERTA/insumo. Las filas ALTA son designaciones
 de juez titular casi seguras (decreto + nómbrase juez + acuerdo del Senado). El valor publicado
 se confirma con revisión humana (columna 'confianza' / 'confirmado').
 
@@ -342,7 +342,7 @@ def test():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="ITR — Radar de nombramientos judiciales (BORA)")
+    ap = argparse.ArgumentParser(description="MIA — Radar de nombramientos judiciales (BORA)")
     ap.add_argument("--test", action="store_true", help="prueba la detección con ejemplos, sin red")
     ap.add_argument("--fecha", help="escanea una fecha puntual YYYY-MM-DD")
     ap.add_argument("--desde", help="corrida histórica: fecha inicial YYYY-MM-DD")

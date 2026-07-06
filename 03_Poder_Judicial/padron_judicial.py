@@ -1,5 +1,5 @@
 """
-ITR — Padrón Judicial Vivo (cobertura e independencia, eje Judicial)
+MIA — Padrón Judicial Vivo (cobertura e independencia, eje Judicial)
 ===================================================================
 Mantiene un PADRÓN de cargos de JUECES (un cargo por fila) que arranca del último snapshot
 oficial del dataset de magistrados (datos.jus.gob.ar) y que el bot va actualizando EN VIVO
@@ -12,7 +12,7 @@ vacancia) sobre los cargos HABILITADOS — mismo universo que el índice — mar
 mientras el dataset oficial no se actualice. Cada snapshot oficial nuevo RECONCILIA y reinicia
 el padrón desde el dato duro.
 
-Gobernanza (línea no-IA del ITR): determinístico y auditable. Cada cargo guarda su
+Gobernanza (línea no-IA del MIA): determinístico y auditable. Cada cargo guarda su
 estado_fuente (oficial | estimado-radar | estimado-baja) y la norma/fecha que lo cambió. Los
 eventos del BORA que no se puedan mapear con confianza a un cargo van a una COLA DE REVISIÓN.
 
@@ -48,7 +48,7 @@ PADRON_BASE = OUTPUT_DIR / "padron_judicial_base.csv"  # ancla = snapshot oficia
 REVISION = OUTPUT_DIR / "padron_revision.csv"          # eventos sin cargo asignado
 TASAS_EST = OUTPUT_DIR / "padron_tasas_estimadas.csv"  # tasas recalculadas
 RADAR_ALTAS = OUTPUT_DIR / "nombramientos_jueces.csv"  # salida del radar (designaciones)
-RADAR_ALTAS_URL = os.environ.get("ITR_RADAR_CSV_URL", "")  # mismo puente que la cobertura
+RADAR_ALTAS_URL = os.environ.get("MIA_RADAR_CSV_URL", "")  # mismo puente que la cobertura
 RADAR_BAJAS = OUTPUT_DIR / "bajas_jueces.csv"          # salida del detector de bajas (radar)
 RADAR_BAJAS_URL = RADAR_ALTAS_URL.replace("nombramientos_jueces", "bajas_jueces") if RADAR_ALTAS_URL else ""
 HEADERS = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -442,7 +442,7 @@ def _imprimir_tasas(pad: pd.DataFrame, etiqueta: str) -> None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ITR — Padrón judicial vivo")
+    ap = argparse.ArgumentParser(description="MIA — Padrón judicial vivo")
     ap.add_argument("--construir", action="store_true", help="crea el padrón base desde el snapshot oficial")
     ap.add_argument("--actualizar", action="store_true", help="aplica altas/bajas del BORA sobre el padrón")
     ap.add_argument("--verbose", action="store_true", help="vuelca columnas y ejemplos del dataset")

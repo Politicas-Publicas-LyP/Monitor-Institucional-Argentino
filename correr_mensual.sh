@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # ============================================================================
-#  ITR - PIPELINE MENSUAL COMPLETO  (Linux / servidor)
+#  MIA - PIPELINE MENSUAL COMPLETO  (Linux / servidor)
 # ----------------------------------------------------------------------------
 #  Equivalente de correr_mensual.bat. Requiere EGRESS con IP ARGENTINA:
 #  datos.jus, DGSIAF y BCRA bloquean IPs del exterior/datacenter. (Por eso el
 #  server de la corrida mensual debe tener IP AR; ver AGENTS.md y el runbook
-#  Documentos/ITR — Runbook de la corrida mensual.md)
+#  Documentos/MIA — Runbook de la corrida mensual.md)
 #
 #  Los RADARES del BORA (jueces altas/bajas + Presidencia BCRA) corren en
 #  GitHub Actions y dejan sus CSV puente en el repo; este pipeline los lee de
-#  ahi (variable de entorno ITR_RADAR_CSV_URL).
+#  ahi (variable de entorno MIA_RADAR_CSV_URL).
 #
 #  QUE MES CALCULA (HASTA):
 #    ./correr_mensual.sh                 -> HASTA = mes en curso (PROVISIONAL)
@@ -20,7 +20,7 @@
 #  AUTOMATIZACION (server con IP AR). Cerrar el mes anterior el dia 3 de cada
 #  mes, 06:00, y dejar el log:
 #    crontab -e  ->
-#    0 6 3 * *  CERRAR_ANTERIOR=1 /ruta/al/repo/correr_mensual.sh >> /var/log/itr.log 2>&1
+#    0 6 3 * *  CERRAR_ANTERIOR=1 /ruta/al/repo/correr_mensual.sh >> /var/log/mia.log 2>&1
 #  Solo CALCULA el indice (sin commit ni publicacion automatica): el equipo
 #  revisa las alertas de QA y publica. Devuelve exit!=0 si algun paso fallo.
 # ============================================================================
@@ -45,7 +45,7 @@ fi
 PY="${PY:-python3}"
 mkdir -p output
 LOG="output/_corrida_mensual_$(date +%Y%m%d_%H%M%S).log"
-echo "ITR - corrida mensual | rango: $DESDE .. $HASTA | log: $LOG" | tee "$LOG"
+echo "MIA - corrida mensual | rango: $DESDE .. $HASTA | log: $LOG" | tee "$LOG"
 
 FALLOS=0
 run() {
@@ -90,9 +90,9 @@ run "$PY" 05_Banco_Central/scraper_17_bcra_designacion.py    --desde "$DESDE" --
 echo "== ENSAMBLAR + QA + GRAFICOS ==" | tee -a "$LOG"
 run "$PY" 00_Comun/icia_ensamblado.py --desde "$DESDE" --hasta "$HASTA" --publicar-desde "$PUBLICAR"
 run "$PY" 00_Comun/validar.py
-run "$PY" 00_Comun/graficar_itr.py
+run "$PY" 00_Comun/graficar_mia.py
 
-echo "LISTO. Indice: output/itr_mensual.csv | Alertas QA: output/_alertas_validacion.md" | tee -a "$LOG"
+echo "LISTO. Indice: output/mia_mensual.csv | Alertas QA: output/_alertas_validacion.md" | tee -a "$LOG"
 echo "(El mes en curso sale PROVISIONAL; para el titular cerrado, correr con el mes cerrado: ./correr_mensual.sh AAAA-MM)" | tee -a "$LOG"
 if [ "$FALLOS" -gt 0 ]; then
   echo "ATENCION: $FALLOS paso(s) fallaron. Revisar el log: $LOG" | tee -a "$LOG"

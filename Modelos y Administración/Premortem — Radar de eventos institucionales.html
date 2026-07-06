@@ -1,5 +1,5 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Premortem — Radar de eventos institucionales (ITR)</title>
+<title>Premortem — Radar de eventos institucionales (MIA)</title>
 <style>
 :root{--bg:#0a0e1a;--card:#121829;--ink:#e8edf7;--mut:#9aa6c0;--red:#ff4d4f;--amber:#f5a524;--line:#222c44}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:'Segoe UI',system-ui,Arial,sans-serif;line-height:1.5}
@@ -21,7 +21,7 @@ ul{margin:6px 0 0;padding-left:18px}li{margin:5px 0;font-size:14px}
 .mini{color:var(--mut);font-size:12.5px}
 </style></head><body><div class="wrap">
 <h1>Premortem — Radar de eventos institucionales</h1>
-<div class="sub">Índice de Transparencia Republicana (ITR) · Fundación Libertad y Progreso · junio 2026</div>
+<div class="sub">Monitor Institucional Argentino (MIA) · Fundación Libertad y Progreso · junio 2026</div>
 <div class="frame"><b>Encuadre:</b> han pasado 6 meses desde que se puso en marcha el Radar (capa de exploración que barre normativa, FOPEA, CSJN/Senado y noticias, clasifica con un LLM y arma un watchlist mensual de posibles puntos ciegos del índice). <b>Fracasó.</b> 7 investigadores analizaron, en paralelo, por qué murió.</div>
 
 <h2>Síntesis</h2>
@@ -31,7 +31,7 @@ ul{margin:6px 0 0;padding-left:18px}li{margin:5px 0;font-size:14px}
 
 <h2>Plan revisado</h2>
 <div class="syn"><ul>
-<li><b>Firewall verificable (cont. del valor):</b> el watchlist NUNCA toca el número y se prohíben los "flags provisorios" en la presentación. Test automático en cada cierre: recomputar el ITR desde las 18 variables; si valor publicado ≠ reconstruido, se aborta la publicación. Cero flags "temporales" vivos al publicar.</li>
+<li><b>Firewall verificable (cont. del valor):</b> el watchlist NUNCA toca el número y se prohíben los "flags provisorios" en la presentación. Test automático en cada cierre: recomputar el MIA desde las 18 variables; si valor publicado ≠ reconstruido, se aborta la publicación. Cero flags "temporales" vivos al publicar.</li>
 <li><b>Precision sobre recall (ruido):</b> deduplicar por <i>evento</i> (no por noticia), umbral de relevancia y tope duro de ítems/mes (≤25 tras dedup). Medir el % del anexo efectivamente leído.</li>
 <li><b>Test de simetría (sesgo):</b> pares de eventos equivalentes bajo distintas gestiones deben clasificarse igual; auditar el ratio candidatos/medida-oficial entre gobiernos; prompt en términos neutrales; priorizar fuentes oficiales (BO/CSJN/Senado) sobre noticias.</li>
 <li><b>Fuentes diversificadas (dependencia):</b> el core son las fuentes oficiales estructuradas; las noticias, complemento con fallback. Monitorear no-determinismo (2 corridas el mismo día) y % de aporte por fuente; tener plan B y presupuesto de la API.</li>
@@ -42,7 +42,7 @@ ul{margin:6px 0 0;padding-left:18px}li{margin:5px 0;font-size:14px}
 
 <h2>Checklist pre-lanzamiento</h2>
 <div class="syn"><ul>
-<li>☐ Test de reproducibilidad automático activo (publicar solo si ITR reconstruido = publicado; 0 flags provisorios).</li>
+<li>☐ Test de reproducibilidad automático activo (publicar solo si MIA reconstruido = publicado; 0 flags provisorios).</li>
 <li>☐ Corrida piloto con dedup + umbral + tope: confirmar que salen ≤25 ítems reales/mes, no cientos.</li>
 <li>☐ Test de simetría de sesgo corrido sobre dos gestiones antes de confiar en el clasificador.</li>
 <li>☐ Owner y SLA de conversión de backlog definidos por escrito (sin responsable, no se lanza).</li>
@@ -51,13 +51,13 @@ ul{margin:6px 0 0;padding-left:18px}li{margin:5px 0;font-size:14px}
 
 <h2>Los 7 modos de fallo analizados</h2>
 <div class="grid">
-<div class="card"><h4>1 · Contaminación del valor publicado</h4><span class="tag p-media">Prob. media</span><span class="tag d-alto">Daño alto</span><p>Un "flag provisorio" se mostró junto al número; luego uno movió el valor sin dato duro. Para el mes 5 el ITR oscilaba con el ciclo noticioso y la auditoría no cerró desde las 18 variables.</p><div class="lbl">Supuesto</div><p>La separación se sostiene por diseño técnico, no por disciplina de proceso bajo presión.</p><div class="lbl">Alerta temprana</div><p>El valor publicado deja de recalcularse exacto desde las 18 variables; flags "provisorios" vivos &gt; 0 al publicar.</p></div>
+<div class="card"><h4>1 · Contaminación del valor publicado</h4><span class="tag p-media">Prob. media</span><span class="tag d-alto">Daño alto</span><p>Un "flag provisorio" se mostró junto al número; luego uno movió el valor sin dato duro. Para el mes 5 el MIA oscilaba con el ciclo noticioso y la auditoría no cerró desde las 18 variables.</p><div class="lbl">Supuesto</div><p>La separación se sostiene por diseño técnico, no por disciplina de proceso bajo presión.</p><div class="lbl">Alerta temprana</div><p>El valor publicado deja de recalcularse exacto desde las 18 variables; flags "provisorios" vivos &gt; 0 al publicar.</p></div>
 <div class="card"><h4>2 · Ruido &gt; señal / fatiga</h4><span class="tag p-alta">Prob. alta</span><span class="tag d-medio">Daño medio</span><p>340→500+ candidatos/mes con duplicados; el analista pasó a leer 30 filas y archivar el resto. Un cambio real en la CSJN quedó en la fila 287. El anexo terminó borrándose sin abrir.</p><div class="lbl">Supuesto</div><p>Un analista preferiría revisar todo y descartar a mano antes que dejar que el sistema filtre de más.</p><div class="lbl">Alerta temprana</div><p>&gt;50 candidatos/mes o &gt;30% duplicados; &lt;10-15% de filas accionables; caída del % de anexo leído.</p></div>
-<div class="card"><h4>3 · Sesgo del clasificador LLM</h4><span class="tag p-media">Prob. media</span><span class="tag d-alto">Daño alto</span><p>El prompt describía variables en clave de "abuso del oficialismo"; el LLM levantaba 40-50 candidatos con una gestión y 15 con otra. Un periodista mostró 2,3× más eventos "contra" un gobierno. "IA" + "sesgo" pegadas al ITR contaminaron la marca.</p><div class="lbl">Supuesto</div><p>Un clasificador que "solo descubre candidatos" es neutral; la asimetría de qué descubre ya es interpretación.</p><div class="lbl">Alerta temprana</div><p>Ratio candidatos/medida divergiendo entre gestiones; test de simetría nunca corrido.</p></div>
+<div class="card"><h4>3 · Sesgo del clasificador LLM</h4><span class="tag p-media">Prob. media</span><span class="tag d-alto">Daño alto</span><p>El prompt describía variables en clave de "abuso del oficialismo"; el LLM levantaba 40-50 candidatos con una gestión y 15 con otra. Un periodista mostró 2,3× más eventos "contra" un gobierno. "IA" + "sesgo" pegadas al MIA contaminaron la marca.</p><div class="lbl">Supuesto</div><p>Un clasificador que "solo descubre candidatos" es neutral; la asimetría de qué descubre ya es interpretación.</p><div class="lbl">Alerta temprana</div><p>Ratio candidatos/medida divergiendo entre gestiones; test de simetría nunca corrido.</p></div>
 <div class="card"><h4>4 · Fuente de noticias frágil/sesgada</h4><span class="tag p-media">Prob. media-alta</span><span class="tag d-medio">Daño medio</span><p>NewsAPI movió el endpoint a pago con 24h de retraso; GDELT sesgado a portales grandes; el servicio bueno costaba USD 400+/mes; el RSS no era determinístico. En un mes clave el eje noticias quedó ciego. Mismo patrón que Vigía/OpenArg.</p><div class="lbl">Supuesto</div><p>Una API externa mantendría términos, precio y cobertura estables toda la vida del Radar.</p><div class="lbl">Alerta temprana</div><p>Cae el % de candidatos del eje noticias; dos corridas del mismo día difieren &gt;10%; HTTP 429/402/403 en logs.</p></div>
 <div class="card"><h4>5 · Gobernanza: hallazgos sin acción</h4><span class="tag p-alta">Prob. alta</span><span class="tag d-medio">Daño medio</span><p>11 puntos ciegos detectados correctamente; el backlog "para construir" se volvió un cementerio. "Cuando tengamos una semana libre" — nunca la hubo. A los 6 meses, cero variables nuevas: el Radar "sabía" qué faltaba y el índice no mejoró.</p><div class="lbl">Supuesto</div><p>Lo difícil es detectar y recomendar, no asignar responsable, presupuesto y plazo para construir.</p><div class="lbl">Alerta temprana</div><p>Tasa de conversión de backlog = 0 al mes 2; edad del ítem más viejo crece sin egresos.</p></div>
 <div class="card"><h4>6 · Atribución no verificada (legal)</h4><span class="tag p-media">Prob. media</span><span class="tag d-crit">Daño crítico</span><p>El LLM afirmó (sin el "habría") que un juez "recibió pagos" desde un portal de bajo tráfico; entró a un anexo público. Carta documento + "la fundación del bot que inventó la coima". La credibilidad determinística quedó contaminada por una frase.</p><div class="lbl">Supuesto</div><p>Un watchlist "interno" de IA permanecería interno y el carácter determinístico protegería a sus capas no verificadas.</p><div class="lbl">Alerta temprana</div><p>&lt;100% de entradas con fuente primaria verificada; verbos afirmativos donde la fuente decía "habría/según fuentes".</p></div>
 <div class="card"><h4>7 · Doble conteo / incoherencia</h4><span class="tag p-media">Prob. media</span><span class="tag d-alto">Daño alto</span><p>Un mega-DNU ya contado en "DNU vs leyes" se cargó además como evento; el eje renormalizó y distorsionó pesos. Se sumaron 3 variables sin recalibrar; la serie dejó de ser comparable. 30% de la baja del trimestre era doble conteo.</p><div class="lbl">Supuesto</div><p>Detectar un evento y medirlo son la misma operación; todo lo que el Radar encuentra puede entrar sin verificar solapamiento ni recalibrar.</p><div class="lbl">Alerta temprana</div><p>Un mismo hecho citado en una variable existente y en un flag el mismo mes; cambia el nº de variables/eje sin acta y la serie histórica se mueve.</p></div>
 </div>
-<div class="foot">Premortem generado con 7 investigadores en paralelo (método Klein / retrospectiva prospectiva) · ITR — Fundación Libertad y Progreso · junio 2026.</div>
+<div class="foot">Premortem generado con 7 investigadores en paralelo (método Klein / retrospectiva prospectiva) · MIA — Fundación Libertad y Progreso · junio 2026.</div>
 </div></body></html>

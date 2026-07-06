@@ -1,12 +1,12 @@
-# ITR — Guía de arquitectura y operación (AGENTS.md)
+# MIA — Guía de arquitectura y operación (AGENTS.md)
 
-Índice de Transparencia Republicana (ITR) — Fundación Libertad y Progreso. Índice mensual
+Monitor Institucional Argentino (MIA) — Fundación Libertad y Progreso. Índice mensual
 de calidad republicana (0-100), con dato duro, **determinístico y auditable** (sin IA en el
 valor publicado). Este documento es la referencia para operar y mantener el proyecto.
 
 ## Repositorio y régimen de trabajo (LEER PRIMERO)
 
-- **Fuente única de verdad (remoto):** https://github.com/Politicas-Publicas-LyP/-ndice-de-Transparencia-Republicana-ITR-
+- **Fuente única de verdad (remoto):** https://github.com/Politicas-Publicas-LyP/<REPO>  (renombrar el repo en GitHub al nuevo nombre y actualizar esta URL; hasta entonces sigue siendo el slug …-ITR-)
   Siempre extraer la última versión de ahí antes de trabajar y subir los cambios al terminar.
 - **Trabajo en paralelo:** el índice se desarrolla con varias cuentas/máquinas a la vez. La
   sincronización se hace con **GitHub Desktop** (pull antes de empezar, commit + push al cerrar).
@@ -15,23 +15,23 @@ valor publicado). Este documento es la referencia para operar y mantener el proy
   última actualización y los pendientes de cada variable. Es el lugar para leer/registrar novedades
   sin tener que abrir el código. Mantenerlo al día con cada cambio.
 - **Qué versiona el repo:** código, configuración (`variables.yaml`, `contracts.yaml`), documentos,
-  bitácoras y los CSV publicados (`output/*_mensual.csv`, `itr_*.csv`, el puente
+  bitácoras y los CSV publicados (`output/*_mensual.csv`, `mia_*.csv`, el puente
   `nombramientos_jueces.csv` y el padrón). Lo regenerable (cachés `output/_cache_*`, `__pycache__`,
   locks) está excluido por `.gitignore`.
 
 ## Arquitectura de carpetas
-- `00_Comun/` — ensamblador (`icia_ensamblado.py`), gráficos (`graficar_itr.py`), validador
+- `00_Comun/` — ensamblador (`icia_ensamblado.py`), gráficos (`graficar_mia.py`), validador
   (`validar.py`), **`variables.yaml`** (fuente única de verdad), `contracts.yaml`, `requirements.txt`.
 - `01_Poder_Ejecutivo/` … `05_Banco_Central/` — un scraper por variable (módulos numerados).
-- `06_Historico/` — núcleo histórico (anual `itr_nucleo_historico.py`, mensual `itr_nucleo_mensual.py`) y `correr_nucleo_historico.bat`.
-- `output/` — CSV generados, caches (`_cache_*`, `_balbcrhis.xls`, `_recaudacion.csv`) y salidas (`itr_mensual.csv`, `itr_nucleo_*.csv`).
+- `06_Historico/` — núcleo histórico (anual `mia_nucleo_historico.py`, mensual `mia_nucleo_mensual.py`) y `correr_nucleo_historico.bat`.
+- `output/` — CSV generados, caches (`_cache_*`, `_balbcrhis.xls`, `_recaudacion.csv`) y salidas (`mia_mensual.csv`, `mia_nucleo_*.csv`).
 - `Documentos/` — reportes y materiales. `Modelos y Administración/` — modelo de estilo LyP y nota metodológica.
 
 ## Fuente única de verdad: `variables.yaml`
 Define las 18 variables: eje, peso, y por componente `archivo/col/mejor/peor/peso_intra/modo` + flag `nucleo`.
 Lo leen el ensamblador y los ensambladores de núcleo. **Para cambiar una variable, anclas o pesos: editar el YAML, no el código.**
 - `modo`: `suavizado` (media móvil 12m) · `sin_suavizar` (estado binario/puntual) · `arrastre` (evento puntual con decaimiento asimétrico, p. ej. acceso de prensa).
-- `nucleo: true` → entra en el ITR Núcleo (serie larga comparable).
+- `nucleo: true` → entra en el MIA Núcleo (serie larga comparable).
 
 ## Pipeline (mensual)
 scrapers (idempotentes, con caché y `--desde/--hasta`) → **padrón judicial** (construir/actualizar) → `icia_ensamblado.py` → `validar.py` (QA) → reportes (.docx) → notificación.
@@ -40,11 +40,11 @@ py 01_Poder_Ejecutivo/scraper_01_dnu_leyes.py --desde 2023-01 --hasta 2026-05   
 py 03_Poder_Judicial/padron_judicial.py --construir                             # base oficial de jueces
 py 03_Poder_Judicial/padron_judicial.py --actualizar                            # aplica altas/bajas del BORA (estimado)
 py 03_Poder_Judicial/scraper_05_cobertura_judicial.py --desde 2023-01 --hasta 2026-06  # cobertura: estimado padrón + flujo radar
-py 00_Comun/icia_ensamblado.py --desde 2023-01 --hasta 2026-05                  # ensambla -> output/itr_mensual.csv
+py 00_Comun/icia_ensamblado.py --desde 2023-01 --hasta 2026-05                  # ensambla -> output/mia_mensual.csv
 py 00_Comun/validar.py                                                          # QA: notifica, no bloquea
 ```
-Orquestador mensual: **`correr_mensual.bat`** (Windows) / **`correr_mensual.sh`** (Linux/server con IP AR) corre TODO el pipeline en orden (scrapers → padrón → cobertura → ensamblar → validar → gráficos). **DESDE = 2023-01 (colchón)** para que el suavizado de 12m esté completo al inicio; el índice **se publica desde 2024-01 (gestión Milei) ya suavizado**, vía `icia_ensamblado.py --publicar-desde 2024-01` (calcula con el colchón y recorta la salida). HASTA = mes en curso (provisional); **para cerrar un mes puntual se pasa como argumento**: `correr_mensual.bat 2026-06` / `./correr_mensual.sh 2026-06`. En el server, `CERRAR_ANTERIOR=1 ./correr_mensual.sh` cierra el mes anterior (pensado para cron; `.sh` devuelve exit≠0 si algún paso falló). La corrida **solo calcula** el índice: no commitea ni publica (eso lo confirma una persona tras leer el QA). Modelo operativo completo en **`Documentos/ITR — Runbook de la corrida mensual.md`**. **El server debe tener IP argentina** (DGSIAF/BCRA/datos.jus bloquean el exterior; el radar del BORA es lo único que corre en la nube).
-Núcleo histórico: `06_Historico/correr_nucleo_historico.bat` (corre los scrapers de serie larga --desde 2003 y ensambla) → `itr_nucleo_mensual.py`.
+Orquestador mensual: **`correr_mensual.bat`** (Windows) / **`correr_mensual.sh`** (Linux/server con IP AR) corre TODO el pipeline en orden (scrapers → padrón → cobertura → ensamblar → validar → gráficos). **DESDE = 2023-01 (colchón)** para que el suavizado de 12m esté completo al inicio; el índice **se publica desde 2024-01 (gestión Milei) ya suavizado**, vía `icia_ensamblado.py --publicar-desde 2024-01` (calcula con el colchón y recorta la salida). HASTA = mes en curso (provisional); **para cerrar un mes puntual se pasa como argumento**: `correr_mensual.bat 2026-06` / `./correr_mensual.sh 2026-06`. En el server, `CERRAR_ANTERIOR=1 ./correr_mensual.sh` cierra el mes anterior (pensado para cron; `.sh` devuelve exit≠0 si algún paso falló). La corrida **solo calcula** el índice: no commitea ni publica (eso lo confirma una persona tras leer el QA). Modelo operativo completo en **`Documentos/MIA — Runbook de la corrida mensual.md`**. **El server debe tener IP argentina** (DGSIAF/BCRA/datos.jus bloquean el exterior; el radar del BORA es lo único que corre en la nube).
+Núcleo histórico: `06_Historico/correr_nucleo_historico.bat` (corre los scrapers de serie larga --desde 2003 y ensambla) → `mia_nucleo_mensual.py`.
 
 ## Convenciones de scrapers
 - Interfaz: `--desde AAAA-MM --hasta AAAA-MM`; salida a `output/<archivo>_<timestamp>.csv`; columna `periodo` (AAAA-MM).
@@ -70,7 +70,7 @@ Núcleo histórico: `06_Historico/correr_nucleo_historico.bat` (corre los scrape
 - **Validación = notificar, no bloquear:** `validar.py` avisa (exit 2 + `output/_alertas_validacion.md`) pero la publicación no se frena; el equipo evalúa.
 
 ## Capa de IA (solo exploración, nunca el valor publicado)
-Reservada para: reparar scrapers, redactar el informe (voz LyP, skill `lyp-pp`), QA/anomalías y el futuro Radar de eventos institucionales. El número del ITR se calcula solo con conteos determinísticos.
+Reservada para: reparar scrapers, redactar el informe (voz LyP, skill `lyp-pp`), QA/anomalías y el futuro Radar de eventos institucionales. El número del MIA se calcula solo con conteos determinísticos.
 
 ## Radar de Nombramientos Judiciales (07_Radar_Nombramientos)
 
@@ -106,7 +106,7 @@ dataset de magistrados y el bot actualiza EN VIVO con los eventos del BORA.
 - `--actualizar`: aplica ALTAS (`nombramientos_jueces.csv`) y BAJAS (`bajas_jueces.csv`)
   **posteriores al snapshot** (un evento anterior ya está en el dato oficial → se ignora).
   Matching por tokens + número de juzgado re-leyendo el cuerpo del decreto; lo no mapeable va a
-  `output/padron_revision.csv` (revisión humana). Lee los puentes del repo (`ITR_RADAR_CSV_URL`
+  `output/padron_revision.csv` (revisión humana). Lee los puentes del repo (`MIA_RADAR_CSV_URL`
   para altas; la de bajas se deriva).
 - Recalcula titularidad/subrogancia/sin-cobertura como **estimado** → `output/padron_tasas_estimadas.csv`.
   `scraper_05_cobertura_judicial.py` sobreescribe el STOCK del mes corriente con esas tasas

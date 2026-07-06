@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================
-REM  ITR - Nucleo Historico (2003-2026, anual)
+REM  MIA - Nucleo Historico (2003-2026, anual)
 REM  Corre las variables de serie larga con --desde 2003-01 y ensambla.
 REM  Requiere IP argentina. Cada corrida tambien sirve de TEST de cobertura:
 REM  si una fuente no llega a 2003 o cambio de esquema, se vera en el log.
@@ -46,7 +46,7 @@ echo --- Designacion Presidente BCRA ---
 py "05_Banco_Central\scraper_17_bcra_designacion.py" --desde 2003-01 --hasta 2026-05
 
 echo ====================== ENSAMBLAR NUCLEO ======================
-py "06_Historico\itr_nucleo_historico.py" --desde 2003 --hasta 2026
+py "06_Historico\mia_nucleo_historico.py" --desde 2003 --hasta 2026
 echo.
 echo ====== LISTO. Revisar la columna 'ejes_cubiertos' por anio. ======
 pause

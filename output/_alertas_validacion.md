@@ -1,4 +1,4 @@
-# ITR — Validación QA · 2026-07-06 11:55
+# MIA — Validación QA · 2026-07-06 15:15
 
 **Estado:** OK
 **Política:** NOTIFICAR, no bloquear la publicación. (exit 2 = publicar + avisar)

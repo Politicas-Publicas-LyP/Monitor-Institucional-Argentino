@@ -1,8 +1,8 @@
-# Índice de Transparencia Republicana (ITR)
+# Monitor Institucional Argentino (MIA)
 
 Fundación Libertad y Progreso — Departamento de Políticas Públicas.
 
-El ITR es un índice mensual de calidad republicana (escala 0–100) construido con **dato duro,
+El MIA es un índice mensual de calidad republicana (escala 0–100) construido con **dato duro,
 determinístico y auditable**: cada valor publicado sale de conteos, SQL o campos estructurados
 reproducibles, **nunca de juicios de una IA**. La IA y las noticias se usan solo para explorar y
 alertar, no para fijar el valor. La normalización es por **anclaje a un ideal absoluto** (por
@@ -11,7 +11,7 @@ variable: el mejor valor posible → 100, el peor → 0).
 ## Repositorio y régimen de trabajo
 
 - **Fuente única de verdad:** este repositorio en GitHub —
-  https://github.com/Politicas-Publicas-LyP/-ndice-de-Transparencia-Republicana-ITR-
+  https://github.com/Politicas-Publicas-LyP/<REPO>  (renombrar el repo en GitHub al nuevo nombre y actualizar esta URL; hasta entonces sigue siendo el slug …-ITR-)
 - El índice se trabaja **en paralelo con varias cuentas/máquinas**. La sincronización es por
   **GitHub Desktop**:
   1. **Pull** antes de empezar (traer lo último).
@@ -32,7 +32,7 @@ variable: el mejor valor posible → 100, el peor → 0).
 | `06_Historico/` | Núcleo histórico anual (2003+) y mensual (2020+). |
 | `07_Radar_Nombramientos/` | Radar del BORA que detecta designaciones de jueces (corre en GitHub Actions). |
 | `Documentos/`, `Modelos y Administración/` | Reportes, nota metodológica, modelo LyP, mejoras. |
-| `output/` | Series calculadas (`*_mensual.csv`), índice (`itr_*.csv`), puente del radar y padrón. |
+| `output/` | Series calculadas (`*_mensual.csv`), índice (`mia_*.csv`), puente del radar y padrón. |
 
 ## Bitácoras
 

@@ -1,5 +1,5 @@
 """
-ITR — Módulo 20: Aparato de medios estatales (Prensa Institucional)
+MIA — Módulo 20: Aparato de medios estatales (Prensa Institucional)
 ===================================================================
 Mide el TAMAÑO del aparato de medios del Estado (RTA/TV Pública, Radio Nacional,
 Télam/agencia de noticias, Contenidos Públicos) como PORCIÓN del gasto devengado total.
@@ -39,7 +39,7 @@ from urllib3.util.retry import Retry
 
 ANUAL = "https://dgsiaf-repo.mecon.gob.ar/repository/pa/datasets/{anio}/credito-anual-{anio}.zip"
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output"
-HEADERS = {"User-Agent": "ITR-LyP/0.1 (politicaspublicas@libertadyprogreso.org)"}
+HEADERS = {"User-Agent": "MIA-LyP/0.1 (politicaspublicas@libertadyprogreso.org)"}
 DEV_COL = "credito_devengado"
 # entidades de medios estatales (federales)
 PATRON = re.compile(
@@ -115,7 +115,7 @@ def medios_anual(anio: int, s: requests.Session) -> dict | None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ITR Módulo 20 — Medios estatales (share anual)")
+    ap = argparse.ArgumentParser(description="MIA Módulo 20 — Medios estatales (share anual)")
     ap.add_argument("--desde", default="2023-01")
     ap.add_argument("--hasta", default="2026-05")
     args = ap.parse_args()

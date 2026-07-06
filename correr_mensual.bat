@@ -1,13 +1,13 @@
 @echo off
 REM ============================================================================
-REM  ITR - PIPELINE MENSUAL COMPLETO  (todas las variables -> indice)
+REM  MIA - PIPELINE MENSUAL COMPLETO  (todas las variables -> indice)
 REM ----------------------------------------------------------------------------
 REM  Corre en una maquina con IP ARGENTINA: datos.jus, DGSIAF y BCRA bloquean
 REM  IPs del exterior/datacenter. (apis.datos.gob.ar si responde afuera.)
 REM
 REM  Los RADARES del BORA (jueces altas/bajas + Presidencia BCRA) NO van aca:
 REM  corren solos en GitHub Actions y dejan sus CSV puente en el repo. Este
-REM  pipeline los lee del repo (variable ITR_RADAR_CSV_URL ya configurada).
+REM  pipeline los lee del repo (variable MIA_RADAR_CSV_URL ya configurada).
 REM
 REM  Equivalente Linux (para el server con IP AR): correr_mensual.sh
 REM  Orden: scrapers -> padron judicial -> cobertura -> ensamblar -> QA -> graficos.
@@ -34,7 +34,7 @@ if not "%~1"=="" (
   for /f %%i in ('powershell -NoProfile -Command "(Get-Date).ToString('yyyy-MM')"') do set "HASTA=%%i"
 )
 echo ============================================================
-echo  ITR - corrida mensual   rango: %DESDE%  ..  %HASTA%
+echo  MIA - corrida mensual   rango: %DESDE%  ..  %HASTA%
 echo ============================================================
 
 REM (Recomendado) traer codigo y CSV puente al dia antes de correr:
@@ -82,11 +82,11 @@ echo.
 echo ====================== ENSAMBLAR + QA + GRAFICOS ======================
 py "00_Comun\icia_ensamblado.py" --desde %DESDE% --hasta %HASTA% --publicar-desde %PUBLICAR%
 py "00_Comun\validar.py"
-py "00_Comun\graficar_itr.py"
+py "00_Comun\graficar_mia.py"
 
 echo.
 echo ============================================================
-echo  LISTO.  Indice: output\itr_mensual.csv
+echo  LISTO.  Indice: output\mia_mensual.csv
 echo          Alertas QA: output\_alertas_validacion.md
 echo  Nota: sin arg, el mes en curso sale PROVISIONAL. Para el titular
 echo        cerrado, corre con el mes:  correr_mensual.bat AAAA-MM

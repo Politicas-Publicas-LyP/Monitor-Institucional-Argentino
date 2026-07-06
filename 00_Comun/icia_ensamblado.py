@@ -1,5 +1,5 @@
 """
-ITR — Índice de Transparencia Republicana — Ensamblado y Normalización ANCLADA AL IDEAL
+MIA — Monitor Institucional Argentino — Ensamblado y Normalización ANCLADA AL IDEAL
 =======================================================================================
 Convierte las series mensuales de las 5 macrocategorías a una escala 0-100 ANCLADA A UN
 IDEAL ABSOLUTO de transparencia y república liberal (frenos y contrapesos), NO relativa al
@@ -14,11 +14,11 @@ Las TASAS y CONTEOS se suavizan 12m (limpian ruido). Los ESTADOS BINARIOS/puntua
 (NO_SUAVIZAR) NO se suavizan: un flag vale por entero cuando corresponde, no se promedia
 con el pasado (ej.: presupuesto aprobado hoy cuenta pleno, no diluido por la prórroga previa).
 
-ITR = promedio ponderado de los 5 sub-índices con PESOS MACRO FIJOS 30/20/20/15/15. Cada
+MIA = promedio ponderado de los 5 sub-índices con PESOS MACRO FIJOS 30/20/20/15/15. Cada
 sub-índice se renormaliza sobre las variables disponibles de su categoría, de modo que una
 variable ausente (AGN) no altera el peso macro del poder.
 
-Salida: output/itr_mensual.csv  +  output/itr_reporte.md
+Salida: output/mia_mensual.csv  +  output/mia_reporte.md
 Uso:    py icia_ensamblado.py --desde 2023-01 --hasta 2026-05
 Requisitos: pip install pandas
 
@@ -162,7 +162,7 @@ def carryover(s: pd.Series, meses: int) -> pd.Series:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ITR — Ensamblado anclado al ideal")
+    ap = argparse.ArgumentParser(description="MIA — Ensamblado anclado al ideal")
     ap.add_argument("--desde", default="2023-01")
     ap.add_argument("--hasta", default="2026-05")
     ap.add_argument("--suavizado", type=int, default=12, help="ventana de suavizado (meses)")
@@ -213,11 +213,11 @@ def main() -> int:
         out[f"sub_{cat}"] = (sub.mul(w, axis=1).sum(axis=1, min_count=1) /
                              wmat.sum(axis=1).replace(0, float("nan"))) * 100
 
-    # ITR = promedio de sub-índices con pesos macro FIJOS (35/25/25/15)
+    # MIA = promedio de sub-índices con pesos macro FIJOS (35/25/25/15)
     subm = pd.DataFrame({c: out[f"sub_{c}"] for c in MACRO})
     wM = pd.Series(MACRO)
     wmat = subm.notna().mul(wM, axis=1)
-    out["ITR"] = (subm.mul(wM, axis=1).sum(axis=1, min_count=1) /
+    out["MIA"] = (subm.mul(wM, axis=1).sum(axis=1, min_count=1) /
                   wmat.sum(axis=1).replace(0, float("nan")))
     out["cobertura_vars"] = vs.notna().sum(axis=1).astype(int)
     for v in REG:
@@ -230,20 +230,20 @@ def main() -> int:
 
     out_idx = out.reset_index(names="periodo")
     out_idx["periodo"] = out_idx["periodo"].astype(str)
-    out_csv = OUTPUT_DIR / "itr_mensual.csv"
+    out_csv = OUTPUT_DIR / "mia_mensual.csv"
     out_idx.to_csv(out_csv, index=False, encoding="utf-8")
 
     # ---- reporte markdown ----
-    val = out.dropna(subset=["ITR"])
+    val = out.dropna(subset=["MIA"])
     ult, prim = val.iloc[-1], val.iloc[0]
-    rep = OUTPUT_DIR / "itr_reporte.md"
+    rep = OUTPUT_DIR / "mia_reporte.md"
     with rep.open("w", encoding="utf-8") as fh:
-        fh.write("# Indice de Transparencia Republicana (ITR)\n\n")
+        fh.write("# Monitor Institucional Argentino (MIA)\n\n")
         fh.write("*Escala 0-100 ANCLADA AL IDEAL liberal de transparencia y frenos y contrapesos "
                  "(no relativa al pasado) - suavizado {} meses*\n\n".format(args.suavizado))
-        fh.write("## ITR actual: **{:.1f}** ({})\n\n".format(ult['ITR'], val.index[-1]))
+        fh.write("## MIA actual: **{:.1f}** ({})\n\n".format(ult['MIA'], val.index[-1]))
         fh.write("Al inicio del periodo ({}) era {:.1f}; variacion de **{:+.1f}** puntos.\n\n".format(
-            val.index[0], prim['ITR'], ult['ITR'] - prim['ITR']))
+            val.index[0], prim['MIA'], ult['MIA'] - prim['MIA']))
         fh.write("## Sub-indices por poder (ultimo mes)\n\n| Poder | Peso | Sub-indice |\n|---|---|---|\n")
         for cat in MACRO:
             fh.write("| {} | {:.0f}% | {:.1f} |\n".format(cat, MACRO[cat] * 100, ult['sub_' + cat]))
@@ -251,17 +251,17 @@ def main() -> int:
         fh.write("| Variable | Poder | Peso | Score |\n|---|---|---|---|\n")
         for v in REG:
             fh.write("| {} | {} | {:.0f}% | {:.1f} |\n".format(v['var'], v['cat'], v['peso'] * 100, ult[v['var']]))
-        fh.write("\n## Serie ITR (trimestral)\n\n| Periodo | ITR |\n|---|---|\n")
+        fh.write("\n## Serie MIA (trimestral)\n\n| Periodo | MIA |\n|---|---|\n")
         for p in val.index:
             if p.month in (3, 6, 9, 12):
-                fh.write("| {} | {:.1f} |\n".format(p, val.loc[p, 'ITR']))
+                fh.write("| {} | {:.1f} |\n".format(p, val.loc[p, 'MIA']))
         fh.write("\n> Nota: los scores miden distancia al ideal absoluto, no posicion relativa al "
                  "pasado. Control de la corrupcion fue descartado por falta de dato duro (su 8% se "
                  "redistribuyo en Corte y Cobertura); AGN pendiente. Estados binarios (presupuesto) "
                  "sin suavizar; estructurales con ffill/stale.\n")
 
-    print("\n=== ITR (anclado al ideal) — SERIE (cola) ===")
-    print(out_idx[["periodo", "ITR", "sub_Ejecutivo", "sub_Legislativo",
+    print("\n=== MIA (anclado al ideal) — SERIE (cola) ===")
+    print(out_idx[["periodo", "MIA", "sub_Ejecutivo", "sub_Legislativo",
                    "sub_Judicial", "sub_Prensa", "cobertura_vars"]].tail(18).to_string(index=False))
     if faltantes:
         log.warning("Componentes faltantes/diferidos: %s", faltantes)

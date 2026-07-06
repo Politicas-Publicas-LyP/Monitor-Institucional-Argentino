@@ -1,5 +1,5 @@
 """
-ITR — Módulo 22: Acceso de la prensa al poder [Prensa / Libertad de Prensa]
+MIA — Módulo 22: Acceso de la prensa al poder [Prensa / Libertad de Prensa]
 ==========================================================================
 Mide cuánto el Estado restringe el ACCESO de la prensa a la información y a las
 coberturas. Desde la mirada liberal: una prensa libre necesita poder acceder a
@@ -153,7 +153,7 @@ def clasificar(df: pd.DataFrame, s: requests.Session, cache: dict) -> pd.DataFra
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ITR Módulo 22 — Acceso de la prensa")
+    ap = argparse.ArgumentParser(description="MIA Módulo 22 — Acceso de la prensa")
     ap.add_argument("--desde", default="2023-01")
     ap.add_argument("--hasta", default="2026-05")
     ap.add_argument("--solo-estructural", action="store_true",

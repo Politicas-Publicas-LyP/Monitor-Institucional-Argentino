@@ -1,5 +1,5 @@
 """
-ITR — Módulos 18 y 19: Balance del BCRA (Banco Central)
+MIA — Módulos 18 y 19: Balance del BCRA (Banco Central)
 =======================================================
 Una sola fuente (balance del BCRA, saldos a fin de mes -> balbcrhis.xls) alimenta las
 dos variables monetarias de dato:
@@ -25,7 +25,7 @@ from urllib3.util.retry import Retry
 URL = "https://www.bcra.gob.ar/archivos/Pdfs/PublicacionesEstadisticas/balbcrhis.xls"
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output"
 CACHE = OUTPUT_DIR / "_balbcrhis.xls"
-HEADERS = {"User-Agent": "ITR-LyP/0.1 (politicaspublicas@libertadyprogreso.org)"}
+HEADERS = {"User-Agent": "MIA-LyP/0.1 (politicaspublicas@libertadyprogreso.org)"}
 C_PER, C_ADEL, C_LETRAS, C_ACTIVO, C_BASE = 0, 15, 20, 24, 37
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-7s | %(message)s", datefmt="%H:%M:%S")

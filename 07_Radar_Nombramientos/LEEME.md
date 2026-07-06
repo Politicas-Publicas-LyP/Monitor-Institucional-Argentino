@@ -1,11 +1,11 @@
-# ITR — Radar de Nombramientos Judiciales (BORA)
+# MIA — Radar de Nombramientos Judiciales (BORA)
 
 Radar **independiente** del Radar de Desregulación. Cada día hábil revisa la Primera
 Sección del Boletín Oficial y detecta, en una sola pasada, dos tipos de eventos de jueces:
 - **ALTAS** — decretos de designación de jueces titulares (PEN + acuerdo del Senado) → `output/nombramientos_jueces.csv`.
 - **BAJAS** — renuncia / cese / remoción / jubilación / límite de edad / fallecimiento de un juez → `output/bajas_jueces.csv`.
 
-Le da **cadencia** al eje Judicial del ITR (flujo de nombramientos y liberación de cargos),
+Le da **cadencia** al eje Judicial del MIA (flujo de nombramientos y liberación de cargos),
 que de otro modo depende del dataset de magistrados (que se actualiza ~cada 2 años). El padrón
 judicial vivo lee ambos puentes: las altas marcan Titular y las bajas marcan Vacante.
 
@@ -23,7 +23,7 @@ y, para alta confianza, **acuerdo del Senado** + tipo **Decreto**.
 - `BAJA`: señal débil.
 Descarta las **subrogancias sin acuerdo del Senado** (reemplazos removibles, no titulares).
 
-> Gobernanza no-IA del ITR: el radar es **alerta/insumo**, no el valor publicado. Las filas
+> Gobernanza no-IA del MIA: el radar es **alerta/insumo**, no el valor publicado. Las filas
 > `ALTA` son candidatas firmes; el valor del flujo se confirma con revisión humana.
 
 ## Salida — el puente con el índice

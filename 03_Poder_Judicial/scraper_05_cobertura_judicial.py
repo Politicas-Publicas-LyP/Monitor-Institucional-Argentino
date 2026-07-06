@@ -1,5 +1,5 @@
 """
-ITR — Módulo 5: Cobertura e Independencia Judicial (Poder Judicial)
+MIA — Módulo 5: Cobertura e Independencia Judicial (Poder Judicial)
 ===================================================================
 Mide la cobertura e independencia de la judicatura federal/nacional a partir del
 dataset "Magistrados de la Justicia Federal y de la Justicia Nacional" (datos.jus.gob.ar).
@@ -52,8 +52,8 @@ RADAR_CSV = OUTPUT_DIR / "nombramientos_jueces.csv"
 # CSV puente DIRECTO del repo (raw de GitHub), accesible desde Argentina, y caemos a la copia
 # local si no hay red. Completar con el repo donde vive el radar, p.ej.:
 #   https://raw.githubusercontent.com/USUARIO/REPO/main/output/nombramientos_jueces.csv
-# Se puede fijar acá o, mejor, por variable de entorno ITR_RADAR_CSV_URL (no toca el código).
-RADAR_CSV_URL = os.environ.get("ITR_RADAR_CSV_URL", "")
+# Se puede fijar acá o, mejor, por variable de entorno MIA_RADAR_CSV_URL (no toca el código).
+RADAR_CSV_URL = os.environ.get("MIA_RADAR_CSV_URL", "")
 # PADRÓN VIVO (padron_judicial.py): tasas de cobertura recalculadas en vivo con las altas/bajas
 # del BORA. Si existe, se usa para SOBREESCRIBIR el mes corriente (stock) con valor «estimado»,
 # de modo que la cobertura no quede congelada en el último snapshot oficial. Se reconcilia solo
@@ -373,7 +373,7 @@ def diagnostico(s: requests.Session) -> None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ITR Módulo 5 — Cobertura Judicial")
+    ap = argparse.ArgumentParser(description="MIA Módulo 5 — Cobertura Judicial")
     ap.add_argument("--desde", default="2023-01")
     ap.add_argument("--hasta", default="2026-05")
     ap.add_argument("--diagnostico", action="store_true",

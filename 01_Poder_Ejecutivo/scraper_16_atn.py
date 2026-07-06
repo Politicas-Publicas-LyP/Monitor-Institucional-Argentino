@@ -1,5 +1,5 @@
 """
-ITR — Módulo 16: ATN — Aportes del Tesoro Nacional (Poder Ejecutivo)
+MIA — Módulo 16: ATN — Aportes del Tesoro Nacional (Poder Ejecutivo)
 ====================================================================
 Federalismo / discrecionalidad federal. Los ATN son un fondo que el Ejecutivo
 (Ministerio del Interior) reparte A DEDO a las provincias, por fuera de la
@@ -46,7 +46,7 @@ OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output"
 # Observaciones mensuales INMUTABLES (publicación): una vez que un mes CERRÓ y quedó observado,
 # su valor no se recalcula en corridas futuras. Es un archivo VERSIONADO (no cache regenerable).
 OBS = OUTPUT_DIR / "atn_obs_mensual.csv"   # OJO: NO usar prefijo "atn_mensual_" (colisiona con el glob atn_mensual_* del ensamblador)
-HEADERS = {"User-Agent": "ITR-LyP/0.1 (politicaspublicas@libertadyprogreso.org)"}
+HEADERS = {"User-Agent": "MIA-LyP/0.1 (politicaspublicas@libertadyprogreso.org)"}
 DEV_COL = "credito_devengado"
 MES_COL = "impacto_presupuestario_mes"
 PATRON = re.compile(r"aportes?\s+del\s+tesoro\s+nacional", re.IGNORECASE)
@@ -202,7 +202,7 @@ def diagnostico(anio: int, s: requests.Session) -> None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ITR Módulo 16 — ATN (share anual)")
+    ap = argparse.ArgumentParser(description="MIA Módulo 16 — ATN (share anual)")
     ap.add_argument("--desde", default="2023-01")
     ap.add_argument("--hasta", default="2026-05")
     ap.add_argument("--diagnostico", type=int, default=None,

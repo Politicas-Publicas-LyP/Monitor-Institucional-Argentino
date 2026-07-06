@@ -1,7 +1,7 @@
-# ITR — Definición declarativa de variables (FUENTE ÚNICA DE VERDAD).
+# MIA — Definición declarativa de variables (FUENTE ÚNICA DE VERDAD).
 # La leen el ensamblador (icia_ensamblado.py) y los ensambladores de núcleo.
 # modo: suavizado (media móvil 12m) | sin_suavizar (estado binario/puntual) | arrastre (evento con decaimiento asimétrico)
-# nucleo: true si la variable entra en el ITR Núcleo (serie larga comparable).
+# nucleo: true si la variable entra en el MIA Núcleo (serie larga comparable).
 macro:
   Ejecutivo: 0.30
   Legislativo: 0.20

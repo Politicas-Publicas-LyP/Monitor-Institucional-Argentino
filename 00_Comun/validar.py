@@ -1,5 +1,5 @@
 """
-ITR — Validación / QA (NOTIFICA, no bloquea)
+MIA — Validación / QA (NOTIFICA, no bloquea)
 ============================================
 Chequea, contra variables.yaml (fuente única de verdad), que cada fuente esté presente,
 con sus columnas, numérica, no vacía y FRESCA. Calcula la frescura (meses desde el último
@@ -75,7 +75,7 @@ def main():
     estado = "OK" if not errores and not warns else ("ERRORES" if errores else "ADVERTENCIAS")
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
     rep = OUTPUT_DIR / "_alertas_validacion.md"
-    L = [f"# ITR — Validación QA · {stamp}", "", f"**Estado:** {estado}",
+    L = [f"# MIA — Validación QA · {stamp}", "", f"**Estado:** {estado}",
          "**Política:** NOTIFICAR, no bloquear la publicación. (exit 2 = publicar + avisar)", ""]
     if errores: L += ["## Errores"] + [f"- {e}" for e in errores] + [""]
     if warns:   L += ["## Advertencias"] + [f"- {w}" for w in warns] + [""]
@@ -83,7 +83,7 @@ def main():
           "|---|---|---|---|---|"] + [f"| {v} | {a} | {u} | {m} | {l} |" for v,a,u,m,l in frescura]
     rep.write_text("\n".join(L), encoding="utf-8")
 
-    print(f"[VALIDACIÓN ITR] estado={estado} | errores={len(errores)} | advertencias={len(warns)}")
+    print(f"[VALIDACIÓN MIA] estado={estado} | errores={len(errores)} | advertencias={len(warns)}")
     if errores or warns:
         print(f"  -> NOTIFICAR: ver {rep.name} (la publicacion NO se bloquea)")
         for e in errores[:12]: print("   ERROR:", e)

@@ -1,5 +1,5 @@
 """
-ITR — Radar de la Presidencia del BCRA (Boletín Oficial) — SOLO ALERTA
+MIA — Radar de la Presidencia del BCRA (Boletín Oficial) — SOLO ALERTA
 =====================================================================
 Reusa la estructura del Radar de Nombramientos: escanea la Primera Sección del BORA por fecha
 y AVISA cuando aparece un decreto que afecta a la PRESIDENCIA del Banco Central:
@@ -11,7 +11,7 @@ y AVISA cuando aparece un decreto que afecta a la PRESIDENCIA del Banco Central:
   - FIN DE MANDATO (cese / conclusión / vencimiento del mandato) del Presidente del BCRA.
 
 NO toca el valor publicado: es un insumo/alerta para la variable «Designación Pdte. BCRA».
-Cada evento se confirma con revisión humana (línea no-IA del ITR). El registro queda en
+Cada evento se confirma con revisión humana (línea no-IA del MIA). El registro queda en
 output/bcra_presidencia_eventos.csv (append idempotente, dedup por URL).
 
 Trampas que evita: el boilerplate «EL PRESIDENTE DE LA NACIÓN ARGENTINA DECRETA» (que está en
@@ -266,7 +266,7 @@ def test():
 
 
 def main():
-    ap = argparse.ArgumentParser(description="ITR — Radar de la Presidencia del BCRA (BORA)")
+    ap = argparse.ArgumentParser(description="MIA — Radar de la Presidencia del BCRA (BORA)")
     ap.add_argument("--test", action="store_true")
     ap.add_argument("--fecha", help="fecha puntual YYYY-MM-DD")
     ap.add_argument("--desde", help="histórico: fecha inicial YYYY-MM-DD")

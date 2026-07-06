@@ -8,13 +8,13 @@ _Última revisión: 2026-06-25_
 
 Serie comparable de largo plazo (subconjunto de variables de serie larga).
 
-## Núcleo anual (2003+)  (`itr_nucleo_historico.py`)
+## Núcleo anual (2003+)  (`mia_nucleo_historico.py`)
 - **Estado:** OK.
 - **Fuente:** —
 - **Última actualización:** 2026-06-25
 - **Pendientes:** ATN y Judicial históricos para llegar a Macri (parqueado).
 
-## Núcleo mensual (2020+)  (`itr_nucleo_mensual.py`)
+## Núcleo mensual (2020+)  (`mia_nucleo_mensual.py`)
 - **Estado:** OK.
 - **Fuente:** —
 - **Última actualización:** 2026-06-25

@@ -1,7 +1,7 @@
-# Premortem — Radar de eventos institucionales (ITR) · junio 2026
+# Premortem — Radar de eventos institucionales (MIA) · junio 2026
 
 ## Contexto
-- **Qué:** Radar de eventos institucionales: capa de EXPLORACIÓN (job mensual en la nube) que barre normativa (BO), FOPEA, CSJN/Consejo de la Magistratura/Senado y noticias por keywords por eje; clasifica con un LLM cada candidato contra la taxonomía de las 18 variables del ITR y produce un watchlist mensual para revisión humana (¿ya cubierto? / variable nueva con dato duro / flag manual datado). La IA y las noticias solo descubren candidatos; NO alimentan el valor publicado (determinístico, sin IA).
+- **Qué:** Radar de eventos institucionales: capa de EXPLORACIÓN (job mensual en la nube) que barre normativa (BO), FOPEA, CSJN/Consejo de la Magistratura/Senado y noticias por keywords por eje; clasifica con un LLM cada candidato contra la taxonomía de las 18 variables del MIA y produce un watchlist mensual para revisión humana (¿ya cubierto? / variable nueva con dato duro / flag manual datado). La IA y las noticias solo descubren candidatos; NO alimentan el valor publicado (determinístico, sin IA).
 - **Para quién:** Departamento de Políticas Públicas de LyP y la credibilidad ante revisión periodística.
 - **Éxito:** detectar eventos genuinamente no capturados, manteniendo el índice completo y creíble, sin contaminar el valor determinístico ni generar ruido o sesgo.
 
@@ -15,11 +15,11 @@
 7. Doble conteo / incoherencia al incorporar eventos.
 
 ## Análisis profundo (7 investigadores en paralelo)
-**1. Contaminación.** "Flag provisorio" mostrado junto al número → un flag movió el valor sin dato duro → el ITR oscila con el ciclo noticioso → la auditoría no cierra desde las 18 variables. Supuesto: la separación se sostiene por diseño técnico, no por disciplina de proceso. Alerta: valor publicado ≠ reconstruido; flags provisorios vivos > 0 al publicar.
+**1. Contaminación.** "Flag provisorio" mostrado junto al número → un flag movió el valor sin dato duro → el MIA oscila con el ciclo noticioso → la auditoría no cierra desde las 18 variables. Supuesto: la separación se sostiene por diseño técnico, no por disciplina de proceso. Alerta: valor publicado ≠ reconstruido; flags provisorios vivos > 0 al publicar.
 
 **2. Ruido/fatiga.** 340→500+ candidatos/mes con duplicados; el analista lee 30 filas y archiva el resto; un cambio real en la CSJN queda en la fila 287; el anexo termina sin abrirse. Supuesto: el analista preferiría revisar todo a que el sistema filtre de más. Alerta: >50 candidatos/mes o >30% duplicados; <10-15% accionables; cae el % de anexo leído.
 
-**3. Sesgo LLM.** Prompt en clave "abuso del oficialismo"; 40-50 candidatos con una gestión vs 15 con otra; un periodista muestra 2,3× más eventos "contra" un gobierno; "IA"+"sesgo" contaminan la marca del ITR. Supuesto: un clasificador que "solo descubre" es neutral. Alerta: ratio candidatos/medida divergente entre gestiones; test de simetría nunca corrido.
+**3. Sesgo LLM.** Prompt en clave "abuso del oficialismo"; 40-50 candidatos con una gestión vs 15 con otra; un periodista muestra 2,3× más eventos "contra" un gobierno; "IA"+"sesgo" contaminan la marca del MIA. Supuesto: un clasificador que "solo descubre" es neutral. Alerta: ratio candidatos/medida divergente entre gestiones; test de simetría nunca corrido.
 
 **4. Fuente frágil.** NewsAPI pasa a pago con 24h de retraso; GDELT sesgado a grandes portales; servicio bueno USD 400+/mes; RSS no determinístico; en un mes clave el eje noticias queda ciego (mismo patrón que Vigía/OpenArg). Supuesto: la API externa mantendría términos/precio/cobertura. Alerta: cae % de candidatos del eje noticias; 2 corridas mismo día difieren >10%; 429/402/403 en logs.
 

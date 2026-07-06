@@ -1,5 +1,5 @@
 """
-ITR — Módulo 21: Respeto de la Carta Orgánica del BCRA [Banco Central]
+MIA — Módulo 21: Respeto de la Carta Orgánica del BCRA [Banco Central]
 =====================================================================
 Mide la LEGALIDAD del financiamiento monetario del Tesoro, no su magnitud (eso ya lo
 mide el módulo 18). El art. 20 de la Carta Orgánica (Ley 24.144) fija un TOPE a los
@@ -120,7 +120,7 @@ def cargar_recaudacion(periods: pd.PeriodIndex) -> pd.Series | None:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ITR Módulo 21 — Respeto de la Carta Orgánica (BCRA)")
+    ap = argparse.ArgumentParser(description="MIA Módulo 21 — Respeto de la Carta Orgánica (BCRA)")
     ap.add_argument("--desde", default="2023-01")
     ap.add_argument("--hasta", default="2026-05")
     args = ap.parse_args()

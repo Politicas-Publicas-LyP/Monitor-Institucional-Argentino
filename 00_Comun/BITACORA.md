@@ -26,13 +26,14 @@ Motor del índice y configuración transversal.
 - **Última actualización:** 2026-06-25
 - **Pendientes:** —
 
-## Gráficos  (`graficar_itr.py`)
+## Gráficos  (`graficar_mia.py`)
 - **Estado:** OK. Consolidado, 5 ejes y núcleo.
-- **Fuente:** output/itr_mensual.csv
+- **Fuente:** output/mia_mensual.csv
 - **Última actualización:** 2026-06-25
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-07-06 — Renombre integral del índice: **Índice de Transparencia Republicana (ITR) → Monitor Institucional Argentino (MIA)**. Afectó código, columna de datos (`ITR`→`MIA`), nombres de archivo (`itr_*`→`mia_*`, `graficar_mia.py`, `mia_nucleo_*.py`), variable de entorno (`ITR_RADAR_CSV_URL`→`MIA_RADAR_CSV_URL`), documentos y bitácoras. PENDIENTE (manual): renombrar la carpeta raíz y el repositorio de GitHub, y actualizar la URL del repo y la variable de entorno donde esté seteada.
 - 2026-06-29 — Limpieza: 51 CSV `*_mensual_*` viejos (duplicados timestamped) movidos a `archivos_borrar/`
   (ignorada por git); queda 1 por variable. Caches/snapshots intactos. `matplotlib` agregado a requirements.
 - 2026-06-26 — Estados (`sin_suavizar`) ahora persisten por ffill: corrige la inflación de ejes

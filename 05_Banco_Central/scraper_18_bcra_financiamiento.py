@@ -1,5 +1,5 @@
 """
-ITR — Módulo 18: Financiamiento monetario del déficit (Banco Central)
+MIA — Módulo 18: Financiamiento monetario del déficit (Banco Central)
 =====================================================================
 Dominancia fiscal: asistencia del BCRA al Tesoro (transferencias de utilidades +
 adelantos transitorios), que aparece como el factor "Sector Público" en la
@@ -36,7 +36,7 @@ from urllib3.util.retry import Retry
 
 URL = "https://www.bcra.gob.ar/archivos/Pdfs/PublicacionesEstadisticas/panhis.xls"
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output"
-HEADERS = {"User-Agent": "ITR-LyP/0.1 (politicaspublicas@libertadyprogreso.org)"}
+HEADERS = {"User-Agent": "MIA-LyP/0.1 (politicaspublicas@libertadyprogreso.org)"}
 CLAVES = ["sector p", "base monet", "adelanto", "utilidad", "transitori", "tesoro", "letras intransf"]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-7s | %(message)s",
@@ -54,7 +54,7 @@ def session() -> requests.Session:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ITR Módulo 18 — Financiamiento BCRA al Tesoro (descubrimiento)")
+    ap = argparse.ArgumentParser(description="MIA Módulo 18 — Financiamiento BCRA al Tesoro (descubrimiento)")
     ap.add_argument("--desde", default="2023-01")
     ap.add_argument("--hasta", default="2026-05")
     args = ap.parse_args()

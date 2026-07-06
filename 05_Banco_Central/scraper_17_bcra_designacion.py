@@ -1,5 +1,5 @@
 """
-ITR — Módulo 17: Designación del Presidente del BCRA (Banco Central)
+MIA — Módulo 17: Designación del Presidente del BCRA (Banco Central)
 ====================================================================
 Variable ESTRUCTURAL y BINARIA de independencia institucional del Banco Central.
 La Carta Orgánica (Ley 24.144) y la CN exigen que el Presidente y el Directorio del
@@ -70,7 +70,7 @@ def serie_mensual(desde: str, hasta: str) -> pd.DataFrame:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ITR Módulo 17 — Designación Presidente BCRA")
+    ap = argparse.ArgumentParser(description="MIA Módulo 17 — Designación Presidente BCRA")
     ap.add_argument("--desde", default="2023-01")
     ap.add_argument("--hasta", default="2026-05")
     args = ap.parse_args()
