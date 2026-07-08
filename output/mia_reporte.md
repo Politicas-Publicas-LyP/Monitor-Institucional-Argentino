@@ -2,40 +2,40 @@
 
 *Escala 0-100 ANCLADA AL IDEAL liberal de transparencia y frenos y contrapesos (no relativa al pasado) - suavizado 12 meses*
 
-## MIA actual: **56.0** (2026-06)
+## MIA actual: **55.8** (2026-07)
 
-Al inicio del periodo (2024-01) era 49.5; variacion de **+6.5** puntos.
+Al inicio del periodo (2024-01) era 49.5; variacion de **+6.4** puntos.
 
 ## Sub-indices por poder (ultimo mes)
 
 | Poder | Peso | Sub-indice |
 |---|---|---|
-| Ejecutivo | 30% | 54.6 |
-| Legislativo | 20% | 50.8 |
-| Judicial | 20% | 45.5 |
-| Prensa | 15% | 69.0 |
-| Banco Central | 15% | 66.7 |
+| Ejecutivo | 30% | 54.0 |
+| Legislativo | 20% | 49.2 |
+| Judicial | 20% | 45.3 |
+| Prensa | 15% | 71.7 |
+| Banco Central | 15% | 66.5 |
 
 ## Variables (score 0-100 vs ideal, ultimo mes)
 
 | Variable | Poder | Peso | Score |
 |---|---|---|---|
-| DNU vs Leyes | Ejecutivo | 12% | 4.7 |
-| Discrecionalidad presup. | Ejecutivo | 13% | 77.6 |
-| Transparencia (AIP) | Ejecutivo | 5% | 72.7 |
-| ATN (federalismo) | Ejecutivo | 6% | 89.2 |
-| Eficacia de Control | Legislativo | 12% | 27.4 |
-| Calidad Normativa | Legislativo | 10% | 68.6 |
-| Costo del Legislativo | Legislativo | 3% | 84.9 |
+| DNU vs Leyes | Ejecutivo | 12% | 2.2 |
+| Discrecionalidad presup. | Ejecutivo | 13% | 78.1 |
+| Transparencia (AIP) | Ejecutivo | 5% | 71.9 |
+| ATN (federalismo) | Ejecutivo | 6% | 90.7 |
+| Eficacia de Control | Legislativo | 12% | 25.2 |
+| Calidad Normativa | Legislativo | 10% | 66.3 |
+| Costo del Legislativo | Legislativo | 3% | 88.5 |
 | Desempeño de la Corte | Judicial | 15% | 30.0 |
-| Cobertura Judicial | Judicial | 10% | 68.8 |
+| Cobertura Judicial | Judicial | 10% | 68.3 |
 | Escrutinio Abierto | Prensa | 6% | 100.0 |
 | Pauta Publicitaria | Prensa | 5% | 99.9 |
 | Causas contra periodistas | Prensa | 4% | 0.0 |
-| Medios estatales | Prensa | 4% | 71.7 |
-| Acceso de la prensa | Prensa | 4% | 50.2 |
+| Medios estatales | Prensa | 4% | 71.8 |
+| Acceso de la prensa | Prensa | 4% | 65.6 |
 | Financiamiento al Tesoro | Banco Central | 6% | 86.5 |
-| Letras intransferibles | Banco Central | 5% | 62.8 |
+| Letras intransferibles | Banco Central | 5% | 62.3 |
 | Designación Pdte. BCRA | Banco Central | 4% | 0.0 |
 | Respeto Carta Orgánica | Banco Central | 5% | 100.0 |
 
