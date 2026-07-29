@@ -21,10 +21,15 @@ Eje 30%.
 - **Pendientes:** Marcar/avisar cuando el mes está incompleto.
 
 ## Transparencia (AIP)  (`scraper_11_transparencia_v2.py`)
-- **Estado:** OK.
-- **Fuente:** AAIP
-- **Última actualización:** 2026-06-25
-- **Pendientes:** —
+- **Estado:** OK (redefinida 2026-07-29). Ahora fecha por **mes de RESOLUCIÓN** (`fecha_ultimo_pase`
+  de los expedientes terminales), no por mes de INICIO del pedido. Cuenta lo que se CERRÓ en el mes
+  (Resuelto/Vencido); los abiertos entran cuando se resuelven o vencen. Se eliminó el gate de
+  madurez (ya no hace falta) → la variable queda disponible para el mes en curso (nowcast). Sigue
+  publicando `tasa_respuesta` y `tasa_en_plazo` (mismas columnas que lee variables.yaml).
+- **Fuente:** AAIP (microdato sip.csv)
+- **Última actualización:** 2026-07-29
+- **Pendientes:** al re-correr con IP AR, chequear que las anclas (0,95/0,30 y 0,90/0,20) sigan
+  razonables con la serie fechada por resolución.
 
 ## ATN (federalismo)  (`scraper_16_atn.py`)
 - **Estado:** OK. El índice usa el **share MENSUAL** (`atn_share_mensual`, crédito mensual DGSIAF),
@@ -38,4 +43,8 @@ Eje 30%.
 - **Pendientes:** ATN histórico para llegar a Macri (parqueado).
 
 ## Registro de cambios
+- 2026-07-29 — Transparencia (AIP): reescrito el fechado — de mes de INICIO del pedido a **mes de
+  RESOLUCIÓN** (`fecha_ultimo_pase`). Mide "la tasa del mes" (cerrados = Resuelto/Vencido) y se sacó
+  el gate de madurez. Cambia retroactivamente la serie de esta variable (y levemente el eje Ejecutivo
+  y el MIA histórico). Requiere re-correr con IP AR. Probado en seco (test sintético OK).
 - 2026-06-25 — Bitácora creada.

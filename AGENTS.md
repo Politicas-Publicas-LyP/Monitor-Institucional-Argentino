@@ -34,7 +34,9 @@ Lo leen el ensamblador y los ensambladores de núcleo. **Para cambiar una variab
 - `nucleo: true` → entra en el MIA Núcleo (serie larga comparable).
 
 ## Pipeline (mensual)
-scrapers (idempotentes, con caché y `--desde/--hasta`) → **padrón judicial** (construir/actualizar) → `icia_ensamblado.py` → `validar.py` (QA) → reportes (.docx) → notificación.
+scrapers (idempotentes, con caché y `--desde/--hasta`) → **padrón judicial** (construir/actualizar) → `icia_ensamblado.py` → `validar.py` (QA) → `graficar_mia.py` → `archivar_historico.py` (histórico maestro, congela meses cerrados) → `generar_reporte_mensual.py` (.docx modelo automático) → notificación.
+**Reporte mensual:** `00_Comun/generar_reporte_mensual.py` arma el .docx del mes (logo LyP, 3 gráficos —consolidado, 5 ejes y núcleo—, tablas y resumen factual). Todo automático salvo la sección *"La lectura de Libertad y Progreso"*, que se redacta en voz institucional con `Documentos/MIA — Prompt lectura institucional.md` (única parte manual; la IA no toca el valor).
+**Histórico maestro:** `00_Comun/archivar_historico.py` mantiene `output/mia_historico.csv` y `output/mia_historico.xlsx` (hojas *Indice* y *Variables*; + copia en `Documentos/MIA — Serie histórica.xlsx`), con UPSERT e **inmutabilidad**: un mes cuyo calendario ya terminó queda **congelado** y no se reescribe aunque un recálculo posterior lo cambie; el mes en curso se guarda como *provisional*.
 ```
 py 01_Poder_Ejecutivo/scraper_01_dnu_leyes.py --desde 2023-01 --hasta 2026-05   # (cada scraper)
 py 03_Poder_Judicial/padron_judicial.py --construir                             # base oficial de jueces

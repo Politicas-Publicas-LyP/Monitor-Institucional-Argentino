@@ -87,12 +87,14 @@ run "$PY" 05_Banco_Central/scraper_18_bcra_balance.py
 run "$PY" 05_Banco_Central/scraper_21_carta_organica.py      --desde "$DESDE" --hasta "$HASTA"
 run "$PY" 05_Banco_Central/scraper_17_bcra_designacion.py    --desde "$DESDE" --hasta "$HASTA"
 
-echo "== ENSAMBLAR + QA + GRAFICOS ==" | tee -a "$LOG"
+echo "== ENSAMBLAR + QA + GRAFICOS + HISTORICO ==" | tee -a "$LOG"
 run "$PY" 00_Comun/icia_ensamblado.py --desde "$DESDE" --hasta "$HASTA" --publicar-desde "$PUBLICAR"
 run "$PY" 00_Comun/validar.py
 run "$PY" 00_Comun/graficar_mia.py
+run "$PY" 00_Comun/archivar_historico.py   # actualiza el histórico maestro (congela meses cerrados)
+run "$PY" 00_Comun/generar_reporte_mensual.py   # arma el .docx modelo (3 gráficos + tablas + lectura auto)
 
-echo "LISTO. Indice: output/mia_mensual.csv | Alertas QA: output/_alertas_validacion.md" | tee -a "$LOG"
+echo "LISTO. Indice: output/mia_mensual.csv | Historico: output/mia_historico.xlsx | Reporte: Documentos/MIA — Reporte Mensual (<mes>).docx | Alertas QA: output/_alertas_validacion.md" | tee -a "$LOG"
 echo "(El mes en curso sale PROVISIONAL; para el titular cerrado, correr con el mes cerrado: ./correr_mensual.sh AAAA-MM)" | tee -a "$LOG"
 if [ "$FALLOS" -gt 0 ]; then
   echo "ATENCION: $FALLOS paso(s) fallaron. Revisar el log: $LOG" | tee -a "$LOG"

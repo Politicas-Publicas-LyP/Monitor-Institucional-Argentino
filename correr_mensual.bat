@@ -79,14 +79,18 @@ py "05_Banco_Central\scraper_21_carta_organica.py"      --desde %DESDE% --hasta 
 py "05_Banco_Central\scraper_17_bcra_designacion.py"    --desde %DESDE% --hasta %HASTA%
 
 echo.
-echo ====================== ENSAMBLAR + QA + GRAFICOS ======================
+echo ====================== ENSAMBLAR + QA + GRAFICOS + HISTORICO ======================
 py "00_Comun\icia_ensamblado.py" --desde %DESDE% --hasta %HASTA% --publicar-desde %PUBLICAR%
 py "00_Comun\validar.py"
 py "00_Comun\graficar_mia.py"
+py "00_Comun\archivar_historico.py"
+py "00_Comun\generar_reporte_mensual.py"
 
 echo.
 echo ============================================================
 echo  LISTO.  Indice: output\mia_mensual.csv
+echo          Historico: output\mia_historico.xlsx  (+ copia en Documentos)
+echo          Reporte: Documentos\MIA - Reporte Mensual (mes).docx
 echo          Alertas QA: output\_alertas_validacion.md
 echo  Nota: sin arg, el mes en curso sale PROVISIONAL. Para el titular
 echo        cerrado, corre con el mes:  correr_mensual.bat AAAA-MM

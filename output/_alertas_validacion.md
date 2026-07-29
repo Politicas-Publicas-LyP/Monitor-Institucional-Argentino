@@ -1,4 +1,4 @@
-# MIA — Validación QA · 2026-07-08 15:27
+# MIA — Validación QA · 2026-07-29 15:40
 
 **Estado:** OK
 **Política:** NOTIFICAR, no bloquear la publicación. (exit 2 = publicar + avisar)
@@ -7,11 +7,11 @@
 
 | Variable | Archivo | Último | Meses | Tol. |
 |---|---|---|---|---|
-| DNU vs Leyes | dnu_leyes_mensual | 2026-06 | 1 | 3 |
-| Discrecionalidad presup. | discrecionalidad_mensual | 2026-07 | 0 | 3 |
-| Transparencia (AIP) | transparencia_v2_mensual | 2026-04 | 3 | 3 |
+| DNU vs Leyes | dnu_leyes_mensual | 2026-05 | 2 | 3 |
+| Discrecionalidad presup. | discrecionalidad_mensual | 2026-05 | 2 | 3 |
+| Transparencia (AIP) | transparencia_v2_mensual | 2026-07 | 0 | 3 |
 | ATN (federalismo) | atn_mensual | (stale_meses) | 0 | 14 |
-| Eficacia de Control | eficacia_control_mensual | 2026-07 | 0 | 3 |
+| Eficacia de Control | eficacia_control_mensual | 2026-05 | 2 | 3 |
 | Calidad Normativa | sesiones_mensual | 2026-07 | 0 | 3 |
 | Costo del Legislativo | costo_legislativo_mensual | 2026-07 | 0 | 14 |
 | Desempeño de la Corte | resolucion_csjn_mensual | (stale_meses) | 7 | 14 |
@@ -21,7 +21,7 @@
 | Causas contra periodistas | prensa_causas_mensual | 2026-07 | 0 | 3 |
 | Medios estatales | medios_oficiales_mensual | (stale_meses) | 0 | 14 |
 | Acceso de la prensa | acceso_prensa_mensual | 2026-07 | 0 | 3 |
-| Financiamiento al Tesoro | bcra_financiamiento_mensual | 2026-04 | 3 | 3 |
-| Letras intransferibles | bcra_letras_mensual | 2026-04 | 3 | 3 |
+| Financiamiento al Tesoro | bcra_financiamiento_mensual | 2026-06 | 1 | 3 |
+| Letras intransferibles | bcra_letras_mensual | 2026-06 | 1 | 3 |
 | Designación Pdte. BCRA | bcra_designacion_mensual | 2026-07 | 0 | 3 |
-| Respeto Carta Orgánica | carta_organica_mensual | 2026-04 | 3 | 3 |
+| Respeto Carta Orgánica | carta_organica_mensual | 2026-05 | 2 | 3 |

@@ -1,21 +1,30 @@
 """
-ICIA — Módulo 11: Transparencia v2 — Tasa de respuesta a pedidos de AIP
-=======================================================================
-Reemplaza el Índice de Transparencia de la AAIP (saturaba en 100) por la TASA DE
-RESPUESTA a pedidos de acceso a la información (Ley 27.275): proporción de solicitudes
-efectivamente respondidas (idealmente en plazo) sobre las que ya vencieron su término.
-Signo: más respuestas en plazo = mejor (menor asimetría de información).
+MIA — Módulo 11: Transparencia v2 — Tasa de respuesta a pedidos de AIP
+======================================================================
+Mide, para CADA MES, el desempeño del Estado respondiendo pedidos de acceso a la
+información pública (Ley 27.275): de los expedientes que se CERRARON en el mes
+(resueltos o vencidos), qué proporción fue efectivamente respondida (`tasa_respuesta`)
+y qué proporción se respondió dentro del plazo legal (`tasa_en_plazo`). Signo: más
+respuestas, idealmente en plazo = mejor (menor asimetría de información).
+
+FECHADO POR MES DE RESOLUCIÓN (decisión 2026-07-29)
+---------------------------------------------------
+La tasa se fecha por el mes en que el expediente se CERRÓ (`fecha_ultimo_pase` de los
+expedientes terminales), NO por el mes de INICIO del pedido. Motivo: queremos "la tasa
+del mes" — cuántos pedidos se cumplieron o no en ese mes — disponible de inmediato, en
+vez de esperar 1-2 meses a que "madure" el cohorte por fecha de inicio. Los expedientes
+todavía abiertos (estado "En plazo" / "En prórroga") no se cuentan hasta que se cierran;
+entrarán en el mes en que se resuelvan o venzan. Así no hace falta un gate de madurez.
 
 Fuente: microdato AAIP, una fila por solicitud (descarga.aaip.gob.ar/dataset/sip.csv).
-Columnas clave: estado, estado_del_tramite, fecha_de_inicio, plazo (días hábiles),
-sujeto_obligado. Cobertura: PEN, 2017-2026, trimestral.
-
-DIAGNÓSTICO-PRIMERO: el diccionario oficial no enumera los valores de 'estado', así que
-esta corrida vuelca los valores únicos para fijar la clasificación 'respondida' vs.
-'en trámite/vencida'. Hace además un primer cálculo de tasa con heurística, a validar.
+Columnas usadas:
+  - estado: Resuelto (respondido) | Vencido (venció sin respuesta) | En plazo / En prórroga (abierto).
+  - fecha_ultimo_pase: fecha del último movimiento = fecha de cierre para los terminales.
+  - plazo: días hábiles que tomó el trámite (para marcar "en plazo" ≤ 15 días hábiles).
 
 Uso:
-    py scraper_11_transparencia_v2.py --desde 2023-01 --hasta 2026-05
+    py scraper_11_transparencia_v2.py --desde 2023-01 --hasta 2026-07
+    py scraper_11_transparencia_v2.py --diagnostico            # vuelca columnas/estados (sin recorte)
 Requisitos: pip install pandas requests
 """
 from __future__ import annotations
@@ -70,73 +79,75 @@ def load() -> pd.DataFrame:
     raise RuntimeError("No se pudo parsear sip.csv")
 
 
+def _parse_fechas(s: pd.Series) -> pd.Series:
+    """Parseo robusto: ISO primero; si casi todo queda NaT, reintenta dayfirst."""
+    d = pd.to_datetime(s, errors="coerce", format="ISO8601")
+    if d.notna().mean() < 0.5:
+        d = pd.to_datetime(s, errors="coerce", dayfirst=True)
+    return d
+
+
+def agregar(df: pd.DataFrame, desde: str, hasta: str) -> pd.DataFrame:
+    """Serie mensual fechada por MES DE RESOLUCIÓN (fecha_ultimo_pase de los terminales).
+    Devuelve: periodo, n_concluido, n_resuelto, n_vencido, n_en_plazo, tasa_respuesta, tasa_en_plazo."""
+    est = df["estado"].astype(str).str.strip().str.lower()
+    df = df.copy()
+    df["_resuelto"] = est.eq("resuelto")
+    df["_vencido"] = est.eq("vencido")
+    plazo = pd.to_numeric(df.get("plazo"), errors="coerce")
+    df["_en_plazo"] = df["_resuelto"] & (plazo <= PLAZO_LEGAL)     # respondido dentro del término legal
+    df["_cierre"] = _parse_fechas(df.get("fecha_ultimo_pase"))
+
+    # Solo expedientes TERMINALES (ya cerrados) y con fecha de cierre válida.
+    term = (df["_resuelto"] | df["_vencido"]) & df["_cierre"].notna()
+    d = df.loc[term].copy()
+    d["periodo"] = d["_cierre"].dt.to_period("M")
+
+    g = d.groupby("periodo").agg(
+        n_concluido=("_resuelto", "size"),      # resueltos + vencidos cerrados en el mes
+        n_resuelto=("_resuelto", "sum"),
+        n_vencido=("_vencido", "sum"),
+        n_en_plazo=("_en_plazo", "sum"),
+    ).reset_index()
+    g["tasa_respuesta"] = (g["n_resuelto"] / g["n_concluido"]).round(4)   # respondidos / cerrados en el mes
+    g["tasa_en_plazo"] = (g["n_en_plazo"] / g["n_concluido"]).round(4)    # respondidos en plazo / cerrados en el mes
+    g = g[(g["periodo"] >= pd.Period(desde, "M")) & (g["periodo"] <= pd.Period(hasta, "M"))]
+    g["periodo"] = g["periodo"].astype(str)
+    return g.reset_index(drop=True)
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="ICIA Módulo 11 — Transparencia v2 (tasa de respuesta AIP)")
+    ap = argparse.ArgumentParser(description="MIA Módulo 11 — Transparencia v2 (tasa de respuesta AIP, por mes de resolución)")
     ap.add_argument("--desde", default="2023-01")
-    ap.add_argument("--hasta", default="2026-05")
+    ap.add_argument("--hasta", default="2026-07")
+    ap.add_argument("--diagnostico", action="store_true", help="vuelca columnas y valores de 'estado' (sin recorte)")
     args = ap.parse_args()
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     try:
         df = load()
     except Exception as e:  # noqa: BLE001
-        log.error("Fallo al descargar/parsear: %s", e)
+        log.error("Fallo al descargar/parsear (¿bloqueo de IP? correr desde IP argentina): %s", e)
         return 1
 
-    print("\n=== DIAGNÓSTICO (devolver) ===")
-    print("Columnas:", list(df.columns))
-    for col in ("estado", "estado_del_tramite"):
-        if col in df.columns:
-            print(f"\n--- Valores únicos de '{col}' (top 25) ---")
-            print(df[col].value_counts(dropna=False).head(25).to_string())
-    if "plazo" in df.columns:
-        pl = pd.to_numeric(df["plazo"], errors="coerce")
-        print(f"\n--- plazo (días hábiles): min={pl.min()} med={pl.median()} max={pl.max()} NaN={pl.isna().sum()}")
-    if "fecha_de_inicio" in df.columns:
-        f = pd.to_datetime(df["fecha_de_inicio"], errors="coerce", dayfirst=True)
-        print(f"--- fecha_de_inicio: min={f.min()} max={f.max()}")
+    if args.diagnostico:
+        print("\n=== DIAGNÓSTICO ===")
+        print("Columnas:", list(df.columns))
+        print("\n--- estado ---"); print(df["estado"].value_counts(dropna=False).head(25).to_string())
+        f = _parse_fechas(df.get("fecha_ultimo_pase"))
+        print(f"\n--- fecha_ultimo_pase: min={f.min()} max={f.max()} NaT={int(f.isna().sum())}")
 
-    # Clasificación por la columna 'estado' (valores reales: Resuelto/Vencido/En plazo/En prórroga)
-    est = df["estado"].astype(str).str.strip().str.lower()
-    df["_resuelto"] = est.eq("resuelto")
-    df["_vencido"] = est.eq("vencido")
-    df["_concluido"] = df["_resuelto"] | df["_vencido"]          # término ya cumplido
-    df["_pendiente"] = est.isin(["en plazo", "en prórroga", "en prorroga"])
-    df["_plazo"] = pd.to_numeric(df.get("plazo"), errors="coerce")
-    df["_en_plazo"] = df["_resuelto"] & (df["_plazo"] <= PLAZO_LEGAL)
-    df["_fecha"] = pd.to_datetime(df.get("fecha_de_inicio"), errors="coerce", format="ISO8601")
+    g = agregar(df, args.desde, args.hasta)
 
-    print(f"\n--- Conteos: Resuelto={int(df['_resuelto'].sum())} | Vencido={int(df['_vencido'].sum())} "
-          f"| pendiente={int(df['_pendiente'].sum())} | resuelto en plazo (≤{PLAZO_LEGAL}d)={int(df['_en_plazo'].sum())}")
-
-    d = df.dropna(subset=["_fecha"]).copy()
-    d["periodo"] = d["_fecha"].dt.to_period("M")
-    g = d.groupby("periodo").agg(
-        n_total=("_resuelto", "size"),
-        n_concluido=("_concluido", "sum"),
-        n_resuelto=("_resuelto", "sum"),
-        n_vencido=("_vencido", "sum"),
-        n_en_plazo=("_en_plazo", "sum"),
-    ).reset_index()
-    g["tasa_respuesta"] = (g["n_resuelto"] / g["n_concluido"]).round(4)        # respondidas / concluidas
-    g["tasa_en_plazo"] = (g["n_en_plazo"] / g["n_concluido"]).round(4)         # respondidas en plazo / concluidas
-    g["madurez"] = (g["n_concluido"] / g["n_total"]).round(2)                  # % del cohorte ya concluido (vintage)
-    # gate de madurez: meses con <85% concluido son provisorios -> NaN (no inventar señal sesgada)
-    prov = g["madurez"] < 0.85
-    g.loc[prov, ["tasa_respuesta", "tasa_en_plazo"]] = float("nan")
-    g = g[(g["periodo"] >= pd.Period(args.desde, "M")) & (g["periodo"] <= pd.Period(args.hasta, "M"))]
-    g["periodo"] = g["periodo"].astype(str)
-
-    print("\n=== SERIE MENSUAL (por mes de inicio de la solicitud) ===")
-    print(g[["periodo", "n_total", "n_concluido", "n_resuelto", "n_vencido",
-             "tasa_respuesta", "tasa_en_plazo", "madurez"]].tail(18).to_string(index=False))
-    print("\nNota: los últimos 1-2 meses son provisorios (madurez < 1: parte del cohorte sigue en plazo).")
+    print("\n=== SERIE MENSUAL (por mes de RESOLUCIÓN) ===")
+    print(g.tail(18).to_string(index=False))
+    print("\nNota: cada mes cuenta los expedientes CERRADOS en él (resueltos o vencidos). "
+          "Los pedidos aún abiertos entran cuando se resuelven o vencen. Sin gate de madurez.")
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_csv = OUTPUT_DIR / f"transparencia_v2_mensual_{stamp}.csv"
     g.to_csv(out_csv, index=False, encoding="utf-8")
     log.info("CSV guardado: %s", out_csv)
-    print("\n>>> Pegá los valores de 'estado'/'estado_del_tramite' para fijar la clasificación definitiva.")
     return 0
 
 

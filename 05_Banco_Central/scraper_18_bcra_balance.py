@@ -8,13 +8,14 @@ dos variables monetarias de dato:
        (incluye Letra Intransferible del Tesoro, nota 15) / Total del activo. Ideal 0.
 Ambos son SHARES (invariantes a la inflación). Cols (hoja 'B.C.R.A.'): 15=Adelantos,
 20=Sector oficial m/extranjera (letras), 24=Total del activo, 37=Base monetaria.
-Período en col 0 = AAAA.MM. Usa la copia cacheada output/_balbcrhis.xls si existe.
+Período en col 0 = AAAA.MM. DESCARGA SIEMPRE la última versión y refresca la caché
+output/_balbcrhis.xls; solo reutiliza la caché con --offline o si la descarga falla.
 
 Uso: py scraper_18_bcra_balance.py
 Requisitos: py -m pip install pandas xlrd openpyxl requests
 """
 from __future__ import annotations
-import logging, sys
+import argparse, logging, sys
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
@@ -60,13 +61,23 @@ def _f(x):
 
 
 def main():
+    ap = argparse.ArgumentParser(description="MIA Módulos 18/19 — Balance BCRA (financiamiento + letras)")
+    ap.add_argument("--offline", action="store_true",
+                    help="usar solo la copia cacheada _balbcrhis.xls sin descargar (corridas reproducibles offline)")
+    args = ap.parse_args()
     OUTPUT_DIR.mkdir(exist_ok=True)
-    if not CACHE.exists():
-        log.info("Descargando %s ...", URL)
-        if not _descargar():
-            return 1
+    # Por defecto se DESCARGA SIEMPRE la última versión y se refresca la caché.
+    # La copia cacheada solo se reutiliza si se pide --offline o si la descarga falla
+    # (así el balance no queda congelado en un snapshot viejo entre corridas).
+    if args.offline and CACHE.exists():
+        log.info("Modo offline: uso copia cacheada %s (sin descargar).", CACHE.name)
+    elif _descargar():
+        log.info("Balance BCRA descargado; caché actualizada: %s", CACHE.name)
+    elif CACHE.exists():
+        log.warning("No se pudo descargar; uso copia cacheada previa %s (puede estar DESACTUALIZADA).", CACHE.name)
     else:
-        log.info("Usando copia cacheada: %s", CACHE.name)
+        log.error("Sin descarga y sin copia cacheada. Correr desde IP argentina.")
+        return 1
 
     df = pd.ExcelFile(CACHE).parse("B.C.R.A.", header=None)
     head15 = " ".join(str(df.iat[r, C_ADEL]) for r in range(17, 25)).lower()

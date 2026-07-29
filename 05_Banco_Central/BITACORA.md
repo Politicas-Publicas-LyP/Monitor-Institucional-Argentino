@@ -8,17 +8,23 @@ _Última revisión: 2026-06-25_
 
 Eje 15%.
 
-## Financiamiento al Tesoro  (`scraper_18_bcra_financiamiento.py`)
-- **Estado:** OK.
-- **Fuente:** BCRA (balance)
-- **Última actualización:** 2026-06-25
-- **Pendientes:** —
+## Financiamiento al Tesoro  (`scraper_18_bcra_balance.py`)
+- **Estado:** OK (corregido 2026-07-29). El CSV `bcra_financiamiento_mensual` lo genera
+  **`scraper_18_bcra_balance.py`** (Adelantos/Base). El `scraper_18_bcra_financiamiento.py` es
+  solo un script de descubrimiento (vuelca `panhis.xls`, no produce serie) → candidato a retirar
+  del orquestador. BUG resuelto: el balance quedaba congelado (abril) porque el scraper solo
+  descargaba si NO existía la caché `_balbcrhis.xls`; ahora descarga siempre y refresca la caché
+  (usa la copia local solo con `--offline` o si la descarga falla).
+- **Fuente:** BCRA — balance histórico `balbcrhis.xls`
+- **Última actualización:** 2026-07-29
+- **Pendientes:** re-correr con IP AR para traer mayo/junio; evaluar retirar el `_financiamiento.py` del pipeline.
 
 ## Letras intransferibles  (`scraper_18_bcra_balance.py`)
-- **Estado:** OK.
-- **Fuente:** BCRA (balance)
-- **Última actualización:** 2026-06-25
-- **Pendientes:** —
+- **Estado:** OK (corregido 2026-07-29). Misma fuente y mismo fix de caché que Financiamiento
+  (las dos salen del balance); también estaba congelada en abril.
+- **Fuente:** BCRA — balance histórico `balbcrhis.xls`
+- **Última actualización:** 2026-07-29
+- **Pendientes:** re-correr con IP AR para traer mayo/junio.
 
 ## Respeto de la Carta Orgánica (art. 20)  (`scraper_21_carta_organica.py`)
 - **Estado:** OK. Recaudación vía API de Series de Tiempo.
@@ -46,5 +52,9 @@ Eje 15%.
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-07-29 — FIX: `scraper_18_bcra_balance.py` descargaba el balance solo si no existía la caché
+  `_balbcrhis.xls`; como el snapshot era del 8-jun (datos hasta abril), Financiamiento al Tesoro y
+  Letras intransferibles quedaban congeladas en abril en cada corrida. Ahora descarga siempre y
+  refresca la caché; `--offline` fuerza el uso de la copia local. Requiere re-correr con IP AR.
 - 2026-06-25 — Bitácora creada.
 - 2026-06-25 — Creado `radar_bcra.py` (alerta de designación/renuncia/fin de mandato del Presidente del BCRA) e integrado al workflow diario de Actions.
