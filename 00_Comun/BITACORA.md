@@ -56,7 +56,22 @@ Motor del índice y configuración transversal.
 - **Última actualización:** 2026-07-29
 - **Pendientes:** el gráfico de núcleo usa la última corrida del núcleo (hoy 2026-05); se refresca con el pipeline del núcleo.
 
+## Serie histórica larga  (`exportar_serie_historica.py`)
+- **Estado:** NUEVO y OK (2026-08-18). Exporta a un solo Excel toda la historia disponible:
+  `Documentos/MIA — Serie histórica 2020-<año>.xlsx` con hojas *MIA Nucleo mensual* (2020-01 →),
+  *MIA Nucleo anual*, *MIA pleno mensual* (2024-01 →, con estado provisional/cerrado), *Variables*
+  (18 desagregadas) y *Notas* (aclara que los niveles del Núcleo y del pleno no coinciden).
+- **Fuente:** output/mia_nucleo_mensual.csv, mia_nucleo_anual.csv, mia_historico.csv
+- **Última actualización:** 2026-08-18
+- **Pendientes:** —
+
 ## Registro de cambios
+- 2026-08-18 — `archivar_historico.py`: nueva opción **`--reabrir AAAA-MM`** para recalcular a
+  propósito un mes ya congelado (caso típico: una fuente rezagada —balance del BCRA, cierres de
+  AAIP— publica después del primer congelamiento). Es decisión humana y queda registrada en la
+  columna `actualizado`. Sin la opción, la inmutabilidad se mantiene igual. Probado (test OK).
+- 2026-08-18 — Nuevo `exportar_serie_historica.py` (Excel histórico 2020 →). Núcleo mensual
+  re-corrido hasta 2026-07 y ya con la columna `MIA_nucleo`.
 - 2026-07-29 — Diseño: el reporte mensual y **todos los .docx MIA** se pasaron al diseño del
   `Modelo documento LyP.docx` (encabezado con logo, pie con banda roja de CONTACTO, estilos/fuentes
   de la casa; título/encabezados en rojo). Los reportes mensuales lo heredan del generador; el resto

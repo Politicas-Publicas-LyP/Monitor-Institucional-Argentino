@@ -1,4 +1,4 @@
-# MIA — Validación QA · 2026-08-05 11:06
+# MIA — Validación QA · 2026-08-18 16:41
 
 **Estado:** OK
 **Política:** NOTIFICAR, no bloquear la publicación. (exit 2 = publicar + avisar)
@@ -21,7 +21,7 @@
 | Causas contra periodistas | prensa_causas_mensual | 2026-08 | 0 | 3 |
 | Medios estatales | medios_oficiales_mensual | (stale_meses) | 0 | 14 |
 | Acceso de la prensa | acceso_prensa_mensual | 2026-08 | 0 | 3 |
-| Financiamiento al Tesoro | bcra_financiamiento_mensual | 2026-06 | 2 | 3 |
-| Letras intransferibles | bcra_letras_mensual | 2026-06 | 2 | 3 |
+| Financiamiento al Tesoro | bcra_financiamiento_mensual | 2026-07 | 1 | 3 |
+| Letras intransferibles | bcra_letras_mensual | 2026-07 | 1 | 3 |
 | Designación Pdte. BCRA | bcra_designacion_mensual | 2026-08 | 0 | 3 |
 | Respeto Carta Orgánica | carta_organica_mensual | 2026-05 | 3 | 3 |

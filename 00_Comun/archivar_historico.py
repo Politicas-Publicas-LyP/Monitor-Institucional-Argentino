@@ -21,6 +21,7 @@ Uso:  py 00_Comun/archivar_historico.py
 """
 from __future__ import annotations
 
+import argparse
 import logging
 import shutil
 import sys
@@ -51,8 +52,12 @@ def _mes_actual() -> pd.Period:
 
 
 def actualizar(fresh: pd.DataFrame, master: pd.DataFrame | None,
-               datacols: list[str], current: pd.Period, ts: str) -> pd.DataFrame:
-    """UPSERT con congelamiento: los meses 'cerrado' del maestro no se tocan."""
+               datacols: list[str], current: pd.Period, ts: str,
+               reabrir: set[str] | None = None) -> pd.DataFrame:
+    """UPSERT con congelamiento: los meses 'cerrado' del maestro no se tocan.
+    `reabrir` = períodos que el equipo decide recalcular a propósito (human-in-the-loop),
+    p. ej. cuando una fuente rezagada publicó después del primer congelamiento."""
+    reabrir = reabrir or set()
     rows: dict[str, dict] = {}
     if master is not None:
         for _, r in master.iterrows():
@@ -61,7 +66,7 @@ def actualizar(fresh: pd.DataFrame, master: pd.DataFrame | None,
     for _, r in fresh.iterrows():
         per = str(r["periodo"])
         prev = rows.get(per)
-        if prev is not None and str(prev.get("estado")) == "cerrado":
+        if prev is not None and str(prev.get("estado")) == "cerrado" and per not in reabrir:
             congelados += 1
             continue  # inmutable: no reescribir
         estado = "cerrado" if pd.Period(per, "M") < current else "provisional"
@@ -80,6 +85,14 @@ def actualizar(fresh: pd.DataFrame, master: pd.DataFrame | None,
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser(description="MIA — histórico maestro (UPSERT con meses cerrados congelados)")
+    ap.add_argument("--reabrir", nargs="*", default=[], metavar="AAAA-MM",
+                    help="recalcular a propósito meses ya congelados (p. ej. una fuente rezagada publicó "
+                         "después del cierre). Decisión humana: queda registrada en 'actualizado'.")
+    args = ap.parse_args()
+    reabrir = {str(x) for x in args.reabrir}
+    if reabrir:
+        log.warning("REABRIR (recalculo deliberado de meses cerrados): %s", ", ".join(sorted(reabrir)))
     if not SRC.exists():
         log.error("No existe %s. Corré el ensamblado primero.", SRC)
         return 1
@@ -92,7 +105,7 @@ def main() -> int:
     ts = (datetime.now(timezone.utc) - timedelta(hours=3)).strftime("%Y-%m-%d %H:%M")
 
     master = pd.read_csv(MASTER_CSV, dtype={"periodo": str}) if MASTER_CSV.exists() else None
-    out = actualizar(fresh, master, datacols, current, ts)
+    out = actualizar(fresh, master, datacols, current, ts, reabrir)
 
     # CSV maestro (fuente de verdad, versionable)
     out.to_csv(MASTER_CSV, index=False, encoding="utf-8")

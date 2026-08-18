@@ -199,7 +199,11 @@ def main() -> int:
     df = pd.read_csv(OUT / "mia_mensual.csv"); df["periodo"] = df["periodo"].astype(str); df = df.set_index("periodo")
     mes = args.mes or df.index[-1]
     if mes not in df.index:
-        log.error("El mes %s no está en mia_mensual.csv", mes); return 1
+        log.error("El mes %s no está en mia_mensual.csv (rango disponible: %s → %s).",
+                  mes, df.index[0], df.index[-1])
+        log.error("Si el rango quedó corto, la corrida usó un --hasta equivocado: reensamblá con "
+                  "py 00_Comun/icia_ensamblado.py --desde 2023-01 --hasta %s --publicar-desde 2024-01", mes)
+        return 1
     idx = list(df.index); prev = idx[idx.index(mes) - 1] if idx.index(mes) > 0 else None
     y, m = map(int, mes.split("-")); aa_key = f"{y-1}-{m:02d}"; aa = aa_key if aa_key in df.index else None
 

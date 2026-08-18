@@ -2,9 +2,9 @@
 
 *Escala 0-100 ANCLADA AL IDEAL liberal de transparencia y frenos y contrapesos (no relativa al pasado) - suavizado 12 meses*
 
-## MIA actual: **54.3** (2026-08)
+## MIA actual: **54.5** (2026-08)
 
-Al inicio del periodo (2024-01) era 49.5; variacion de **+4.8** puntos.
+Al inicio del periodo (2024-01) era 50.0; variacion de **+4.5** puntos.
 
 ## Sub-indices por poder (ultimo mes)
 
@@ -14,7 +14,7 @@ Al inicio del periodo (2024-01) era 49.5; variacion de **+4.8** puntos.
 | Legislativo | 20% | 46.7 |
 | Judicial | 20% | 44.9 |
 | Prensa | 15% | 71.5 |
-| Banco Central | 15% | 66.5 |
+| Banco Central | 15% | 68.1 |
 
 ## Variables (score 0-100 vs ideal, ultimo mes)
 
@@ -34,8 +34,8 @@ Al inicio del periodo (2024-01) era 49.5; variacion de **+4.8** puntos.
 | Causas contra periodistas | Prensa | 4% | 0.0 |
 | Medios estatales | Prensa | 4% | 71.8 |
 | Acceso de la prensa | Prensa | 4% | 64.5 |
-| Financiamiento al Tesoro | Banco Central | 6% | 86.7 |
-| Letras intransferibles | Banco Central | 5% | 62.0 |
+| Financiamiento al Tesoro | Banco Central | 6% | 87.0 |
+| Letras intransferibles | Banco Central | 5% | 68.2 |
 | Designación Pdte. BCRA | Banco Central | 4% | 0.0 |
 | Respeto Carta Orgánica | Banco Central | 5% | 100.0 |
 
@@ -43,15 +43,15 @@ Al inicio del periodo (2024-01) era 49.5; variacion de **+4.8** puntos.
 
 | Periodo | MIA |
 |---|---|
-| 2024-03 | 46.7 |
-| 2024-06 | 47.0 |
-| 2024-09 | 52.1 |
-| 2024-12 | 52.5 |
-| 2025-03 | 51.7 |
-| 2025-06 | 51.1 |
-| 2025-09 | 51.4 |
-| 2025-12 | 50.1 |
-| 2026-03 | 55.8 |
-| 2026-06 | 56.0 |
+| 2024-03 | 47.2 |
+| 2024-06 | 47.5 |
+| 2024-09 | 52.6 |
+| 2024-12 | 52.9 |
+| 2025-03 | 52.0 |
+| 2025-06 | 51.5 |
+| 2025-09 | 51.6 |
+| 2025-12 | 50.4 |
+| 2026-03 | 56.1 |
+| 2026-06 | 56.2 |
 
 > Nota: los scores miden distancia al ideal absoluto, no posicion relativa al pasado. Control de la corrupcion fue descartado por falta de dato duro (su 8% se redistribuyo en Corte y Cobertura); AGN pendiente. Estados binarios (presupuesto) sin suavizar; estructurales con ffill/stale.

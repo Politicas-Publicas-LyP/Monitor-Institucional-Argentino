@@ -33,8 +33,20 @@ if not "%~1"=="" (
 ) else (
   for /f %%i in ('powershell -NoProfile -Command "(Get-Date).ToString('yyyy-MM')"') do set "HASTA=%%i"
 )
+REM --- Validacion del rango (evita corridas que truncan la serie por un HASTA erroneo) ---
+for /f %%v in ('powershell -NoProfile -Command "if ('%HASTA%' -match '^\d{4}-(0[1-9]|1[0-2])$') {'ok'} else {'bad'}"') do set "CHK=%%v"
+if not "%CHK%"=="ok" (
+  echo.
+  echo  ERROR: HASTA invalido -^> "%HASTA%".  Formato esperado AAAA-MM  ^(ej. 2026-07^)
+  echo  Uso:  correr_mensual.bat            ^(mes en curso, provisional^)
+  echo        correr_mensual.bat 2026-07    ^(cierra ese mes^)
+  echo.
+  pause
+  exit /b 3
+)
 echo ============================================================
 echo  MIA - corrida mensual   rango: %DESDE%  ..  %HASTA%
+echo  REVISA que HASTA sea el mes que queres calcular.
 echo ============================================================
 
 REM (Recomendado) traer codigo y CSV puente al dia antes de correr:
