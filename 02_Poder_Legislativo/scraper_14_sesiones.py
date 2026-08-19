@@ -77,11 +77,27 @@ def scrape(s: requests.Session) -> pd.DataFrame:
     return df
 
 
+def _usar_almacen_del_sistema() -> bool:
+    """TLS: usar el almacén de certificados del SO en vez del bundle de certifi.
+    Los sitios del Congreso suelen no enviar el certificado intermedio (y un antivirus/proxy
+    corporativo puede interceptar TLS); Windows/macOS resuelven ambos casos, certifi no.
+    Síntoma sin esto: 'CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate'.
+    Requiere `pip install truststore`; si no está, se sigue con certifi."""
+    try:
+        import truststore  # noqa: PLC0415
+        truststore.inject_into_ssl()
+        log.info("TLS: usando el almacén de certificados del sistema (truststore).")
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="ICIA Módulo 14 — Sesiones del Congreso")
     ap.add_argument("--desde", default="2023-01")
     ap.add_argument("--hasta", default="2026-05")
     args = ap.parse_args()
+    _usar_almacen_del_sistema()
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     s = session()

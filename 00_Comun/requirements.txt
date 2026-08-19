@@ -8,3 +8,4 @@ matplotlib>=3.7
 python-docx>=1.1     # reporte mensual (generar_reporte_mensual.py)
 openpyxl>=3.1        # histórico maestro .xlsx (archivar_historico.py) y lectura de balances .xls del BCRA
 xlrd>=2.0           # lectura de .xls antiguos del BCRA (balbcrhis/panhis)
+truststore>=0.9    # TLS: usa el almacen de certificados del SO (sitios del Congreso sin cert. intermedio)

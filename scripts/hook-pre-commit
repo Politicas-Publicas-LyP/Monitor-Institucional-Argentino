@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# MIA — hook pre-commit del mapa vivo (mapa-de-proyectos).
+# Reindexa el proyecto antes de cada commit y avisa si alguna bitacora vencio.
+# Nunca bloquea el commit: un indice desactualizado es un problema, no una emergencia.
+#
+# Instalar (Git Bash / GitHub Desktop usa este mismo hook):
+#   cp scripts/hook-pre-commit .git/hooks/pre-commit
+#   (en Linux/macOS ademas: chmod +x .git/hooks/pre-commit)
+
+set -u
+
+RAIZ="$(git rev-parse --show-toplevel)"
+INDEXAR="${CBM_INDEXAR:-$RAIZ/scripts/indexar.py}"
+
+[ -f "$INDEXAR" ] || { echo "mapa: no encuentro indexar.py (definí CBM_INDEXAR)"; exit 0; }
+
+# Python: python3 (Linux/macOS) o py -3 / python (Windows con el launcher)
+if command -v python3 >/dev/null 2>&1; then PY="python3"
+elif command -v py >/dev/null 2>&1; then PY="py -3"
+elif command -v python >/dev/null 2>&1; then PY="python"
+else exit 0
+fi
+
+$PY "$INDEXAR" "$RAIZ" >/dev/null 2>&1 || {
+  echo "mapa: el indexado fallo; el commit sigue igual"
+  exit 0
+}
+
+# Sumar el indice regenerado a este mismo commit
+git add -- "$RAIZ/MAPA.md" "$RAIZ/.mapa/mapa.json" 2>/dev/null
+
+VENCIDAS="$($PY "$INDEXAR" "$RAIZ" --frescura 2>/dev/null)"
+if [ -n "$VENCIDAS" ]; then
+  echo "mapa: bitacoras desactualizadas —"
+  echo "$VENCIDAS" | sed 's/^/  /'
+  echo "  actualizalas y sellalas:  $PY scripts/indexar.py . --sellar <carpeta>"
+fi
+
+exit 0

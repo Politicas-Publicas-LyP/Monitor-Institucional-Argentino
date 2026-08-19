@@ -39,7 +39,9 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from infoleg_source import load_infoleg_df
+# Fuente compartida InfoLEG: única copia en 00_Comun (antes había una por carpeta).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "00_Comun"))
+from infoleg_source import load_infoleg_df  # noqa: E402
 
 OPC_YEAR_URL = ("https://opc.gob.ar/ejecucion-presupuestaria/modificaciones-presupuestarias/"
                 "modificaciones-presupuestarias-{anio}/")

@@ -14,14 +14,28 @@ valor publicado). Este documento es la referencia para operar y mantener el proy
 - **Estado por variable:** cada carpeta de eje tiene un `BITACORA.md` con el estado, la fuente, la
   última actualización y los pendientes de cada variable. Es el lugar para leer/registrar novedades
   sin tener que abrir el código. Mantenerlo al día con cada cambio.
+- **Mapa vivo del repo (`MAPA.md`):** índice generado que dice DÓNDE MIRAR sin releer el proyecto.
+  Leerlo antes de abrir cualquier archivo; para ubicar algo puntual,
+  `python3 .mapa/buscar.py "<término>"`. Se regenera con `python3 scripts/indexar.py .` (el hook de
+  `scripts/hook-pre-commit` lo hace en cada commit). La prosa vive en las bitácoras: la línea
+  `Resumen:` y la sección `## Buscar acá si` de cada una son lo que sube al mapa; al tocar código
+  de una carpeta hay que actualizar su bitácora y sellarla
+  (`python3 scripts/indexar.py . --sellar <carpeta>`). Las decisiones de diseño con costo real
+  están registradas como ADRs en `.mapa/decisiones/` (anclaje al ideal, sin-IA, regla de frescura,
+  inmutabilidad, Vigía/OpenArg, DNU por clase_norma, QA no bloqueante, núcleo en el YAML,
+  Carta Orgánica como test de cumplimiento).
 - **Qué versiona el repo:** código, configuración (`variables.yaml`, `contracts.yaml`), documentos,
   bitácoras y los CSV publicados (`output/*_mensual.csv`, `mia_*.csv`, el puente
   `nombramientos_jueces.csv` y el padrón). Lo regenerable (cachés `output/_cache_*`, `__pycache__`,
   locks) está excluido por `.gitignore`.
 
 ## Arquitectura de carpetas
+- `MAPA.md` + `.mapa/` + `scripts/` — mapa vivo del repo (índice generado, `buscar.py`, ADRs y el
+  indexador). `MAPA.md` y `.mapa/mapa.json` son GENERADOS: no editarlos a mano.
 - `00_Comun/` — ensamblador (`icia_ensamblado.py`), gráficos (`graficar_mia.py`), validador
-  (`validar.py`), **`variables.yaml`** (fuente única de verdad), `contracts.yaml`, `requirements.txt`.
+  (`validar.py`), **`variables.yaml`** (fuente única de verdad), `contracts.yaml`, `requirements.txt`,
+  y **`infoleg_source.py`** (única copia de la descarga compartida de InfoLEG: la importan los
+  módulos 1, 2 y 4 vía `sys.path`).
 - `01_Poder_Ejecutivo/` … `05_Banco_Central/` — un scraper por variable (módulos numerados).
 - `06_Historico/` — núcleo histórico (anual `mia_nucleo_historico.py`, mensual `mia_nucleo_mensual.py`) y `correr_nucleo_historico.bat`.
 - `output/` — CSV generados, caches (`_cache_*`, `_balbcrhis.xls`, `_recaudacion.csv`) y salidas (`mia_mensual.csv`, `mia_nucleo_*.csv`).
@@ -29,7 +43,13 @@ valor publicado). Este documento es la referencia para operar y mantener el proy
 
 ## Fuente única de verdad: `variables.yaml`
 Define las 18 variables: eje, peso, y por componente `archivo/col/mejor/peor/peso_intra/modo` + flag `nucleo`.
-Lo leen el ensamblador y los ensambladores de núcleo. **Para cambiar una variable, anclas o pesos: editar el YAML, no el código.**
+Lo leen el ensamblador y —vía `cargar_nucleo()`— los dos ensambladores de núcleo (desde 2026-08-19 ya
+no tienen listas hardcodeadas propias; ver ADR 0008). **Para cambiar una variable, anclas o pesos:
+editar el YAML, no el código.**
+- `nucleo_comp`: componentes/anclas que usa SOLO el Núcleo cuando la serie larga difiere de la del
+  pleno. Hoy dos casos deliberados: ATN (el núcleo usa el share ANUAL, que existe desde 2003) y
+  Cobertura Judicial (el núcleo usa titular/subrogancia, comparable desde 2017, sin el flujo del
+  radar 2026+). Si no está, el núcleo usa `comp`.
 - `modo`: `suavizado` (media móvil 12m) · `sin_suavizar` (estado binario/puntual) · `arrastre` (evento puntual con decaimiento asimétrico, p. ej. acceso de prensa).
 - `nucleo: true` → entra en el MIA Núcleo (serie larga comparable).
 
@@ -54,6 +74,24 @@ Núcleo histórico: `06_Historico/correr_nucleo_historico.bat` (corre los scrape
   se conserva solo el último de cada `*_mensual_*.csv`; los anteriores se pueden mover a
   `archivos_borrar/` (carpeta de limpieza, ignorada por git, que el equipo elimina del disco).
 - Caches `_cache_*` y snapshots (`_balbcrhis.xls`, `_recaudacion.csv`) → reproducibilidad y corridas offline. No borrar.
+- **Fuera del pipeline (no producen serie):** `05_Banco_Central/diagnostico_panhis.py` (ex
+  `scraper_18_bcra_financiamiento.py`, retirado del orquestador el 2026-08-19: era descubrimiento
+  de la estructura de panhis.xls; las series del eje las genera `scraper_18_bcra_balance.py`) y
+  `03_Poder_Judicial/scraper_10_integridad.py` (PIA/OA: "Control de la corrupción" se descartó por
+  falta de dato duro, no lo consume ninguna variable de `variables.yaml`).
+- **REGLA DE FRESCURA (no negociable, auditada 2026-08-18).** Un scraper **siempre consulta la fuente
+  antes de usar una copia local**. La caché/snapshot es **fallback** (offline o si la fuente falla),
+  nunca la vía principal. En concreto:
+  1. *Snapshots de archivo* (balance BCRA, recaudación): descargar siempre y **refrescar** el snapshot;
+     usar la copia local solo con `--offline` o si la descarga falla, avisando que puede estar vieja.
+  2. *Cachés por año* (`_cache_*_AAAA.csv`): cachear **solo años cerrados** →
+     `usar_cache = anio < datetime.now().year`; el año en curso se recalcula.
+  3. *Cachés por mes* (`_cache_congreso.json`): **nunca persistir el mes en curso** — su conteo es
+     parcial y quedaría congelado incluso después de cerrar el mes.
+  4. *Cachés por ítem inmutable* (clasificación de un decreto o de un caso FOPEA por id): OK, siempre
+     que el **listado** se baje fresco en cada corrida.
+  Síntoma del incumplimiento: una variable que queda plana durante meses. Ante eso, revisar la caché
+  ANTES de concluir que "no hubo novedades".
 - Variables estructurales: forward-fill con columna `stale_meses` (la usa el validador para la frescura).
 - ESTADOS (`sin_suavizar`): el ensamblador los PERSISTE por ffill (último valor conocido). Así un estado sin fila nueva (p. ej. "Designación Pdte. BCRA" o "presupuesto aprobado") no se cae de la renormalización ni infla el eje en análisis del mes en curso.
 
@@ -69,7 +107,7 @@ Núcleo histórico: `06_Historico/correr_nucleo_historico.bat` (corre los scrape
 - **Vigía / OpenArg: NO se usan como fuente** del valor publicado (no exponen API JSON anónima; verificado jun-2026).
 - **Sin self-host; todo cloud-activable.** Para el deploy, la incógnita abierta es el egress con IP argentina.
 - **Human-in-the-loop no negociable:** anclas, pesos, tabla de designación del BCRA, tabla de acreditaciones (acceso de prensa) y toda decisión de diseño.
-- **Validación = notificar, no bloquear:** `validar.py` avisa (exit 2 + `output/_alertas_validacion.md`) pero la publicación no se frena; el equipo evalúa.
+- **Validación = notificar, no bloquear:** `validar.py` avisa (exit 2 + `output/_alertas_validacion.md`) pero la publicación no se frena; el equipo evalúa. En `correr_mensual.sh` ese exit 2 NO cuenta como fallo del pipeline (solo un crash del validador sí), para que el cron distinguya "QA con avisos" de "algo se rompió".
 
 ## Capa de IA (solo exploración, nunca el valor publicado)
 Reservada para: reparar scrapers, redactar el informe (voz LyP, skill `lyp-pp`), QA/anomalías y el futuro Radar de eventos institucionales. El número del MIA se calcula solo con conteos determinísticos.

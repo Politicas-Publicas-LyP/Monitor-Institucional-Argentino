@@ -1,12 +1,22 @@
 # Bitácora — Poder Ejecutivo
 
+<!-- huella: 4fada65713a7 -->
+
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
 > hacé *pull*; al terminar, *commit + push* (ver AGENTS.md → régimen de trabajo).
 
-_Última revisión: 2026-06-25_
+_Última revisión: 2026-08-19_
 
-Eje 30%.
+Resumen: Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF).
+
+## Buscar acá si
+
+- DNU, decretos o leyes; la marca oficial `clase_norma` de InfoLEG → `scraper_01_dnu_leyes.py`
+- presupuesto aprobado vs prórroga, o modificaciones por DA/DNU (OPC) → `scraper_04_discrecionalidad.py` (tabla `PRESUPUESTO_APROBADO`, actualizar cada año)
+- pedidos de acceso a la información, tasa de respuesta o en plazo → `scraper_11_transparencia_v2.py` (fechado por mes de RESOLUCIÓN)
+- ATN, reparto discrecional a provincias, share del gasto → `scraper_16_atn.py` (inmutabilidad en `atn_obs_mensual.csv`)
+- una variable del eje quedó plana durante meses → revisar cachés ANTES de concluir "sin novedades" (regla de frescura, AGENTS.md)
 
 ## DNU vs Leyes  (`scraper_01_dnu_leyes.py`)
 - **Estado:** OK.
@@ -43,6 +53,10 @@ Eje 30%.
 - **Pendientes:** ATN histórico para llegar a Macri (parqueado).
 
 ## Registro de cambios
+- 2026-08-19 — `scraper_01_dnu_leyes.py` ahora usa la fuente compartida `00_Comun/infoleg_source.py`
+  (antes duplicaba adentro la descarga/parseo/fechas). La copia local `infoleg_source.py` de esta
+  carpeta se retiró; `scraper_04` la importa de 00_Comun vía `sys.path`. Comportamiento verificado
+  con un ZIP sintético (clasificación, agregado mensual y `_fecha_origen` idénticos).
 - 2026-07-29 — Transparencia (AIP): reescrito el fechado — de mes de INICIO del pedido a **mes de
   RESOLUCIÓN** (`fecha_ultimo_pase`). Mide "la tasa del mes" (cerrados = Resuelto/Vencido) y se sacó
   el gate de madurez. Cambia retroactivamente la serie de esta variable (y levemente el eje Ejecutivo

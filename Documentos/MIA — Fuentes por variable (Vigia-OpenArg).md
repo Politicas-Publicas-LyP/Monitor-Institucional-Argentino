@@ -30,7 +30,7 @@ El valor publicado de cada variable se calcula con **conteos determinísticos / 
 
 ## Fichas por variable
 
-### EJECUTIVO (35%)
+### EJECUTIVO (30%)
 
 **1. DNU vs. leyes**
 1. *Dato:* cuota de DNU sobre actos con rango legislativo = DNU / (DNU + leyes), ventana 12m. Unidad: ratio 0–1.
@@ -56,7 +56,7 @@ El valor publicado de cada variable se calcula con **conteos determinísticos / 
 5. *Reproducibilidad:* snapshot del CSV + fecha.
    → **GAP en Vigía/OpenArg; resuelto con scraper propio.**
 
-### LEGISLATIVO (25%)
+### LEGISLATIVO (20%)
 
 **4. Eficacia de control (pedidos de informe / art. 101)**
 1. *Dato:* cumplimiento del art. 101 CN (concurrencias del Jefe de Gabinete) o tasa de respuesta a pedidos de informe. Unidad: ratio 12m.
@@ -74,7 +74,7 @@ El valor publicado de cada variable se calcula con **conteos determinísticos / 
 5. *Reproducibilidad:* snapshot + query.
    → **ALTO ROI: Vigía reemplazaría el scraping frágil de HCDN** que hoy nos da problemas. Recomendado si confirma endpoint.
 
-### JUDICIAL (25%)
+### JUDICIAL (20%)
 
 **6. Integridad pública**
 1. *Dato:* (en el MIA se concluyó que **no existe dato duro, periódico y automatizable** de celeridad/condena de causas de corrupción; la variable se descartó y su peso se redistribuyó).

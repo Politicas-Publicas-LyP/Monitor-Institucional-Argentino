@@ -1,6 +1,16 @@
 """
-MIA — Módulo 18: Financiamiento monetario del déficit (Banco Central)
-=====================================================================
+MIA — HERRAMIENTA DE DIAGNÓSTICO: estructura de panhis.xls (BCRA)
+=================================================================
+>>> NO ES UN SCRAPER DEL PIPELINE. <<<  Retirado del orquestador el 2026-08-19;
+antes se llamaba scraper_18_bcra_financiamiento.py, nombre que colisionaba con
+scraper_18_bcra_balance.py — el que SÍ produce las series del índice
+(bcra_financiamiento_mensual_*.csv y bcra_letras_mensual_*.csv).
+Este script solo EXPLORA el "panorama monetario histórico" (panhis.xls): vuelca
+hojas y filas con palabras clave, por si algún día se quiere medir la asistencia
+al Tesoro por factores de expansión de la base ("Sector Público") en vez del
+stock de Adelantos del balance. No produce ninguna serie.
+
+Contexto original del descubrimiento:
 Dominancia fiscal: asistencia del BCRA al Tesoro (transferencias de utilidades +
 adelantos transitorios), que aparece como el factor "Sector Público" en la
 explicación de la base monetaria. Desde la mirada liberal/austríaca: financiar el
@@ -17,7 +27,7 @@ estructura (hojas, primeras filas, filas que matchean palabras clave) y, si ubic
 conceptos, calcula la serie. Con tu log local fijamos las celdas/filas exactas.
 
 Uso:
-    py scraper_18_bcra_financiamiento.py --desde 2023-01 --hasta 2026-05
+    py 05_Banco_Central/diagnostico_panhis.py
 Requisitos: pip install pandas xlrd openpyxl requests
 """
 from __future__ import annotations

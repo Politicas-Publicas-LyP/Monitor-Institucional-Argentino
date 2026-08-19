@@ -39,7 +39,9 @@ from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from infoleg_source import load_infoleg_df
+# Fuente compartida InfoLEG: única copia en 00_Comun (antes había una por carpeta).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "00_Comun"))
+from infoleg_source import load_infoleg_df  # noqa: E402
 
 RESULT_URL = "https://www.hcdn.gob.ar/proyectos/resultado.html"
 REFERER = "https://www.hcdn.gob.ar/proyectos/"
@@ -55,6 +57,27 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-7s | 
 log = logging.getLogger("calidad_normativa")
 
 
+INSECURE_TLS = False   # lo activa --insecure (último recurso; ver session())
+
+
+def _usar_almacen_del_sistema() -> bool:
+    """TLS: usar el almacén de certificados del SO en vez del bundle de certifi.
+
+    HCDN suele NO enviar el certificado intermedio, y certifi no sabe ir a buscarlo;
+    Windows/macOS sí (AIA fetching) y además confían en las CA corporativas de un
+    antivirus/proxy que intercepte TLS. Síntoma típico sin esto:
+    'CERTIFICATE_VERIFY_FAILED: unable to get local issuer certificate'.
+    Requiere `pip install truststore` (Python 3.10+); si no está, se sigue con certifi.
+    """
+    try:
+        import truststore  # noqa: PLC0415
+        truststore.inject_into_ssl()
+        log.info("TLS: usando el almacén de certificados del sistema (truststore).")
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def session() -> requests.Session:
     s = requests.Session()
     r = Retry(total=3, backoff_factor=3.0, status_forcelist=(429, 500, 502, 503, 504),
@@ -63,6 +86,15 @@ def session() -> requests.Session:
     s.headers.update({"User-Agent": USER_AGENT, "Referer": REFERER,
                       "Accept-Language": "es-AR,es;q=0.9",
                       "Origin": "https://www.hcdn.gob.ar"})
+    if INSECURE_TLS:
+        s.verify = False
+        try:
+            import urllib3  # noqa: PLC0415
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        except Exception:  # noqa: BLE001
+            pass
+        log.warning("TLS SIN VERIFICAR (--insecure): sólo para destrabar una corrida puntual "
+                    "contra una fuente pública. Revisar el certificado y volver al modo seguro.")
     return s
 
 
@@ -120,20 +152,25 @@ def harvest_simbolicos(periods, cache: Cache) -> pd.DataFrame:
     data = {t: [] for t in TIPOS_SIMBOLICOS}
     total = len(periods) * len(TIPOS_SIMBOLICOS)
     i = 0
+    # El mes EN CURSO nunca se cachea: su conteo es parcial y, si se guardara, quedaría
+    # congelado para siempre (aun después de cerrar el mes). Se re-consulta en cada corrida.
+    mes_actual = pd.Period(datetime.now().strftime("%Y-%m"), freq="M")
     for p in periods:
         y, mth = p.year, p.month
         desde = f"01/{mth:02d}/{y}"
         hasta = f"{calendar.monthrange(y, mth)[1]:02d}/{mth:02d}/{y}"
+        en_curso = pd.Period(f"{y}-{mth:02d}", freq="M") >= mes_actual
         for t in TIPOS_SIMBOLICOS:
             i += 1
             key = f"{t}|{p}"
-            val = cache.get(key)
+            val = None if en_curso else cache.get(key)
             if val is None:
                 val = count_presentados(s, t, desde, hasta)
-                cache.set(key, val)
-                if i % 10 == 0:
-                    cache.save()
-                    log.info("  progreso %s/%s", i, total)
+                if not en_curso:          # solo se persisten meses ya cerrados
+                    cache.set(key, val)
+                    if i % 10 == 0:
+                        cache.save()
+                        log.info("  progreso %s/%s", i, total)
                 time.sleep(THROTTLE)
             data[t].append(val)
     cache.save()
@@ -146,7 +183,15 @@ def main() -> int:
     ap.add_argument("--desde", required=True, help="AAAA-MM")
     ap.add_argument("--hasta", required=True, help="AAAA-MM")
     ap.add_argument("--zip-local", help="ZIP InfoLEG ya descargado")
+    ap.add_argument("--insecure", action="store_true",
+                    help="ÚLTIMO RECURSO: no verificar el certificado TLS de HCDN. Usar sólo si "
+                         "falla 'unable to get local issuer certificate' y truststore no alcanza.")
     args = ap.parse_args()
+
+    global INSECURE_TLS
+    INSECURE_TLS = args.insecure
+    if not INSECURE_TLS:
+        _usar_almacen_del_sistema()   # intenta el almacén del SO (arregla el intermedio faltante)
 
     OUTPUT_DIR.mkdir(exist_ok=True)
     periods = list(pd.period_range(args.desde, args.hasta, freq="M"))

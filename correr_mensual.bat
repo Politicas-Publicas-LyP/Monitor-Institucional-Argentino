@@ -85,7 +85,8 @@ py "04_Prensa_Institucional\scraper_22_acceso_prensa.py"    --desde %DESDE% --ha
 
 echo.
 echo ====================== BANCO CENTRAL ======================
-py "05_Banco_Central\scraper_18_bcra_financiamiento.py" --desde %DESDE% --hasta %HASTA%
+REM (diagnostico_panhis.py, ex scraper_18_bcra_financiamiento, se retiro del pipeline
+REM  el 2026-08-19: era un script de descubrimiento y no produce ninguna serie.)
 py "05_Banco_Central\scraper_18_bcra_balance.py"
 py "05_Banco_Central\scraper_21_carta_organica.py"      --desde %DESDE% --hasta %HASTA%
 py "05_Banco_Central\scraper_17_bcra_designacion.py"    --desde %DESDE% --hasta %HASTA%

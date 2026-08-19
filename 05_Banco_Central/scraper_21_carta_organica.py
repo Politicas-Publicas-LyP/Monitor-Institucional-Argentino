@@ -91,29 +91,46 @@ def cargar_balance() -> pd.DataFrame | None:
 
 
 def cargar_recaudacion(periods: pd.PeriodIndex) -> pd.Series | None:
-    """Devuelve recaudacion_12m (suma móvil 12m) indexada por período, o None."""
+    """Devuelve recaudacion_12m (suma móvil 12m) indexada por período, o None.
+
+    ORDEN (corregido 2026-08-18): se consulta SIEMPRE primero la API de Series de Tiempo
+    (fuente viva, responde también fuera de Argentina) y se refresca el snapshot local.
+    El CSV `_recaudacion.csv` queda como FALLBACK para corridas offline o si la API falla.
+    Antes se hacía al revés: si el CSV existía se usaba sin más, así que un snapshot viejo
+    congelaba la serie (quedó sin dato desde 2026-06 pese a que la API ya publicaba julio).
+    """
     reca = None
-    if RECA_CSV.exists():
-        r = pd.read_csv(RECA_CSV)
-        if {"periodo", "recaudacion"}.issubset(r.columns) and len(r.dropna()) > 0:
-            reca = r.dropna().set_index(pd.PeriodIndex(r.dropna()["periodo"].astype(str), freq="M"))["recaudacion"]
-            log.info("Recaudación: usando CSV local %s (%s meses).", RECA_CSV.name, len(reca))
-        else:
-            log.info("CSV local vacío/sin datos -> usando la API de Series de Tiempo.")
-    if reca is not None and reca.index.min() > periods.min():
-        log.info("CSV no cubre desde %s (empieza %s) -> uso la API para historia completa.",
-                 periods.min(), reca.index.min()); reca = None
-    if reca is None and SERIE_RECAUDACION:
+    if SERIE_RECAUDACION:
         try:
             resp = requests.get(SERIES_API, params={"ids": SERIE_RECAUDACION, "format": "json",
                                                      "limit": 5000}, timeout=60)
+            resp.raise_for_status()
             data = resp.json().get("data", [])
-            reca = pd.Series({pd.Period(d[0][:7], "M"): float(d[1]) for d in data if d[1] is not None})
-            log.info("Recaudación: Series de Tiempo %s (%s puntos).", SERIE_RECAUDACION, len(reca))
+            api = pd.Series({pd.Period(d[0][:7], "M"): float(d[1]) for d in data if d[1] is not None})
+            if len(api) > 0:
+                reca = api.sort_index()
+                log.info("Recaudación: Series de Tiempo %s (%s puntos, hasta %s).",
+                         SERIE_RECAUDACION, len(reca), reca.index.max())
+                try:   # refrescar snapshot para corridas offline
+                    reca.rename("recaudacion").rename_axis("periodo").reset_index().assign(
+                        periodo=lambda d: d["periodo"].astype(str)).to_csv(RECA_CSV, index=False, encoding="utf-8")
+                    log.info("Snapshot actualizado: %s", RECA_CSV.name)
+                except Exception as e:  # noqa: BLE001
+                    log.warning("No pude refrescar el snapshot (%s).", e)
         except Exception as e:  # noqa: BLE001
-            log.warning("Recaudación: fallo Series de Tiempo (%s).", e)
+            log.warning("Recaudación: fallo Series de Tiempo (%s). Uso el CSV local si existe.", e)
+    if reca is None and RECA_CSV.exists():
+        r = pd.read_csv(RECA_CSV)
+        if {"periodo", "recaudacion"}.issubset(r.columns) and len(r.dropna()) > 0:
+            reca = r.dropna().set_index(pd.PeriodIndex(r.dropna()["periodo"].astype(str), freq="M"))["recaudacion"]
+            log.warning("Recaudación: usando CSV local %s (%s meses, hasta %s) — puede estar DESACTUALIZADO.",
+                        RECA_CSV.name, len(reca), reca.index.max())
     if reca is None:
         return None
+    # aviso si la serie no llega al final del rango pedido (la variable quedaría sin dato reciente)
+    if reca.index.max() < periods.max():
+        log.warning("Recaudación llega hasta %s pero se pidió hasta %s: los meses posteriores "
+                    "quedarán sin ratio/exceso.", reca.index.max(), periods.max())
     reca = (reca * ESCALA_RECAUDACION).sort_index()
     reca12 = reca.rolling(12, min_periods=6).sum()
     return reca12.reindex(periods)

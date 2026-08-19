@@ -64,9 +64,15 @@ def main():
             ult = "(stale_meses)"
         else:
             per = pd.PeriodIndex(df["periodo"].astype(str), freq="M")
-            anycol = next(iter(meta["cols"]))
-            mask = pd.to_numeric(df[anycol], errors="coerce").notna().values
-            ult_p = per[mask].max() if mask.any() else None
+            # frescura = el último período con dato en ALGUNA de las columnas usadas
+            # (antes se miraba una columna arbitraria de un set: no determinístico).
+            ult_p = None
+            for col in sorted(meta["cols"]):
+                if col not in df.columns: continue
+                mask = pd.to_numeric(df[col], errors="coerce").notna().values
+                if mask.any():
+                    p = per[mask].max()
+                    ult_p = p if ult_p is None else max(ult_p, p)
             antig = (ult_global - ult_p).n if (ult_global is not None and ult_p is not None) else 0
             ult = str(ult_p)
         frescura.append((meta["var"], arch, ult, antig, lim))

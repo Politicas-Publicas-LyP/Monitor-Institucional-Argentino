@@ -26,33 +26,26 @@ Requisitos: pip install pandas requests
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import logging
 import re
 import sys
 import time
-import zipfile
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-import requests
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+
+# Fuente compartida InfoLEG (única copia, en 00_Comun): descarga robusta, parseo
+# resiliente y fecha coalescida. La usan también los módulos 2 y 4.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "00_Comun"))
+from infoleg_source import build_session, load_infoleg_df  # noqa: E402
 
 # --------------------------------------------------------------------------- #
 # Configuración
 # --------------------------------------------------------------------------- #
-DATASET_ZIP_URL = (
-    "https://datos.jus.gob.ar/dataset/d9a963ea-8b1d-4ca3-9dd9-07a4773e8c23/"
-    "resource/bf0ec116-ad4e-4572-a476-e57167a84403/download/"
-    "base-infoleg-normativa-nacional.zip"
-)
-USER_AGENT = "ICIA-LyP/0.1 (indicador calidad institucional; politicaspublicas@libertadyprogreso.org)"
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output"
 CACHE_FILE = OUTPUT_DIR / "_cache_dnu.json"
-TIMEOUT = 120
 FETCH_THROTTLE = 0.4          # segundos entre fetchs de norma.htm
 MAX_FETCH_DEFAULT = 4000      # tope de seguridad de decretos a abrir
 
@@ -87,21 +80,9 @@ log = logging.getLogger("dnu_leyes")
 class DNULeyesScraper:
     def __init__(self, zip_local: str | None = None):
         self.zip_local = Path(zip_local) if zip_local else None
-        self.session = self._build_session()
+        self.session = build_session()          # sesión robusta compartida (infoleg_source)
         self.df_raw: pd.DataFrame | None = None
         self._cache: dict[str, bool] = self._load_cache()
-
-    # ---- red robusta ------------------------------------------------------ #
-    @staticmethod
-    def _build_session() -> requests.Session:
-        s = requests.Session()
-        retries = Retry(total=5, backoff_factor=1.5,
-                        status_forcelist=(429, 500, 502, 503, 504),
-                        allowed_methods=frozenset(["GET"]))
-        s.mount("https://", HTTPAdapter(max_retries=retries))
-        s.mount("http://", HTTPAdapter(max_retries=retries))
-        s.headers.update({"User-Agent": USER_AGENT})
-        return s
 
     # ---- caché de clasificación DNU --------------------------------------- #
     def _load_cache(self) -> dict[str, bool]:
@@ -116,56 +97,19 @@ class DNULeyesScraper:
         OUTPUT_DIR.mkdir(exist_ok=True)
         CACHE_FILE.write_text(json.dumps(self._cache), encoding="utf-8")
 
-    # ---- descarga + carga ------------------------------------------------- #
-    def _get_zip_bytes(self) -> bytes:
-        if self.zip_local:
-            log.info("Usando ZIP local: %s", self.zip_local)
-            return self.zip_local.read_bytes()
-        log.info("Descargando dataset InfoLEG (puede tardar)...")
-        resp = self.session.get(DATASET_ZIP_URL, timeout=TIMEOUT)
-        resp.raise_for_status()
-        log.info("Descargados %.1f MB", len(resp.content) / 1e6)
-        return resp.content
-
+    # ---- descarga + carga (vía fuente compartida infoleg_source) ---------- #
     def load(self) -> pd.DataFrame:
-        with zipfile.ZipFile(io.BytesIO(self._get_zip_bytes())) as zf:
-            csvs = [n for n in zf.namelist() if n.lower().endswith(".csv")]
-            target = max(csvs, key=lambda n: zf.getinfo(n).file_size)
-            log.info("Leyendo CSV: %s", target)
-            df = self._read_csv_resilient(zf.read(target))
-        self.df_raw = self._prepare_dates(df)
-        return self.df_raw
-
-    @staticmethod
-    def _read_csv_resilient(blob: bytes) -> pd.DataFrame:
-        for enc in ("utf-8", "latin-1"):
-            for sep in (",", ";"):
-                try:
-                    df = pd.read_csv(io.BytesIO(blob), sep=sep, encoding=enc,
-                                     dtype=str, low_memory=False, on_bad_lines="warn")
-                    if df.shape[1] > 1:
-                        log.info("CSV parseado enc=%s sep='%s' -> %s filas, %s cols",
-                                 enc, sep, len(df), df.shape[1])
-                        return df
-                except Exception:  # noqa: BLE001
-                    continue
-        raise RuntimeError("No se pudo parsear el CSV.")
-
-    @staticmethod
-    def _prepare_dates(df: pd.DataFrame) -> pd.DataFrame:
-        """Fecha coalescida: fecha_boletin y, si falta, fecha_sancion (ambas ISO)."""
+        """Carga el dataset con la fuente compartida (00_Comun/infoleg_source.py) y
+        agrega _fecha_origen (boletin/sancion/ninguna), que usa el diagnóstico."""
+        df = load_infoleg_df(zip_local=str(self.zip_local) if self.zip_local else None,
+                             session=self.session)
         fb = pd.to_datetime(df.get("fecha_boletin"), errors="coerce", format="ISO8601")
         fs = pd.to_datetime(df.get("fecha_sancion"), errors="coerce", format="ISO8601")
-        fecha = fb.fillna(fs)
-        # descartar fechas futuras imposibles (errores de carga)
-        hoy = pd.Timestamp.today().normalize()
-        fecha = fecha.where(fecha <= hoy)
-        df = df.copy()
-        df["_fecha"] = fecha
         df["_fecha_origen"] = pd.Series(
             ["boletin" if pd.notna(b) else ("sancion" if pd.notna(s) else "ninguna")
              for b, s in zip(fb, fs)], index=df.index)
-        return df
+        self.df_raw = df
+        return self.df_raw
 
     # ---- diagnóstico ------------------------------------------------------ #
     def diagnose(self) -> None:

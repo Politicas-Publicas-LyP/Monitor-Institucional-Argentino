@@ -28,6 +28,10 @@ jobs:
           python-version: '3.12'
       - name: Instalar dependencias
         run: pip install -r "07_Radar_Nombramientos/requirements.txt"
+      - name: Tests de deteccion (regresion, sin red)
+        run: |
+          python "07_Radar_Nombramientos/radar_nombramientos.py" --test
+          python "05_Banco_Central/radar_bcra.py" --test
       - name: Correr radar
         env:
           DESDE: ${{ github.event.inputs.desde }}

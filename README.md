@@ -23,7 +23,8 @@ variable: el mejor valor posible → 100, el peor → 0).
 
 | Carpeta | Contenido |
 |---|---|
-| `00_Comun/` | Ensamblador (`icia_ensamblado.py`), `variables.yaml` (fuente única de variables/pesos), `contracts.yaml` + `validar.py` (QA y frescura), gráficos. |
+| `MAPA.md`, `.mapa/`, `scripts/` | **Mapa vivo del repo:** índice generado que dice dónde mirar sin releer el proyecto, ADRs de las decisiones firmes y el indexador. |
+| `00_Comun/` | Ensamblador (`icia_ensamblado.py`), `variables.yaml` (fuente única de variables/pesos/núcleo), `contracts.yaml` + `validar.py` (QA y frescura), `infoleg_source.py` (descarga compartida), gráficos, histórico y reporte. |
 | `01_Poder_Ejecutivo/` | DNU vs Leyes, Discrecionalidad presupuestaria, Transparencia (AIP), ATN. |
 | `02_Poder_Legislativo/` | Calidad normativa, Eficacia de control, Costo del Legislativo, Sesiones. |
 | `03_Poder_Judicial/` | Cobertura e independencia judicial, **padrón judicial vivo**, Desempeño de la Corte. |
@@ -34,11 +35,24 @@ variable: el mejor valor posible → 100, el peor → 0).
 | `Documentos/`, `Modelos y Administración/` | Reportes, nota metodológica, modelo LyP, mejoras. |
 | `output/` | Series calculadas (`*_mensual.csv`), índice (`mia_*.csv`), puente del radar y padrón. |
 
+## Cómo orientarse (leer esto antes de abrir código)
+
+1. **`MAPA.md`** (raíz) — único archivo que hace falta leer para empezar: tabla «dónde buscar qué»,
+   carpetas, entrypoints, archivos centrales y fuentes externas. Es **generado**: no editarlo a mano.
+2. Para ubicar algo puntual: `python3 .mapa/buscar.py "<término>"` (devuelve archivo y línea sin
+   abrir nada). Recién después abrir los archivos que salgan.
+3. Al terminar de trabajar: `python3 scripts/indexar.py .` reindexa; si tocaste código de una
+   carpeta, actualizá su bitácora y sellala con `--sellar <carpeta>`. El hook opcional
+   `scripts/hook-pre-commit` lo hace en cada commit (`cp scripts/hook-pre-commit .git/hooks/pre-commit`).
+4. Las decisiones de diseño (por qué el índice se ancla a un ideal, por qué no hay IA en el valor,
+   por qué los meses cerrados se congelan, etc.) están en **`.mapa/decisiones/`**.
+
 ## Bitácoras
 
 Cada carpeta de eje tiene una `BITACORA.md` con el **estado, la fuente, la última actualización y
 los pendientes de cada variable**. Es el lugar para leer y registrar novedades sin abrir el código.
-Mantenerla al día es parte del trabajo en cada cambio.
+Mantenerla al día es parte del trabajo en cada cambio: su línea `Resumen:` y su sección
+`## Buscar acá si` son lo que alimenta el `MAPA.md`.
 
 ## Cómo correr
 

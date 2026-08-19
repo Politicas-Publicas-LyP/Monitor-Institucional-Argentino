@@ -9,4 +9,4 @@ frescura_overrides:          # variables estructurales/anuales: tolerancia mayor
   medios_oficiales_mensual: 14
   pauta_mensual: 14
   costo_legislativo_mensual: 14
-  carta_organica_mensual: 3
+  # (carta_organica_mensual usa el default de 3: el override redundante se quitó 2026-08-19)

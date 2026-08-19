@@ -26,6 +26,7 @@
 # ============================================================================
 set -uo pipefail
 cd "$(dirname "$0")"
+QA_AVISOS=0
 
 DESDE="${DESDE:-2023-01}"        # colchon: 1 anio antes para suavizado 12m completo (no se publica)
 PUBLICAR="${PUBLICAR:-2024-01}"  # inicio publicado = gestion Milei, ya suavizado
@@ -82,14 +83,26 @@ run "$PY" 04_Prensa_Institucional/scraper_20_medios_oficiales.py --desde "$DESDE
 run "$PY" 04_Prensa_Institucional/scraper_22_acceso_prensa.py    --desde "$DESDE" --hasta "$HASTA"
 
 echo "== BANCO CENTRAL ==" | tee -a "$LOG"
-run "$PY" 05_Banco_Central/scraper_18_bcra_financiamiento.py --desde "$DESDE" --hasta "$HASTA"
+# (diagnostico_panhis.py, ex scraper_18_bcra_financiamiento, se retiró del pipeline
+#  el 2026-08-19: era un script de descubrimiento y no produce ninguna serie.)
 run "$PY" 05_Banco_Central/scraper_18_bcra_balance.py
 run "$PY" 05_Banco_Central/scraper_21_carta_organica.py      --desde "$DESDE" --hasta "$HASTA"
 run "$PY" 05_Banco_Central/scraper_17_bcra_designacion.py    --desde "$DESDE" --hasta "$HASTA"
 
 echo "== ENSAMBLAR + QA + GRAFICOS + HISTORICO ==" | tee -a "$LOG"
 run "$PY" 00_Comun/icia_ensamblado.py --desde "$DESDE" --hasta "$HASTA" --publicar-desde "$PUBLICAR"
-run "$PY" 00_Comun/validar.py
+# validar.py: exit 2 = "QA con avisos" (politica: notificar, NO bloquear) -> no cuenta
+# como fallo del pipeline; solo exit 1/otros (crash real del validador) cuentan.
+echo -e "\n### $PY 00_Comun/validar.py" | tee -a "$LOG"
+"$PY" 00_Comun/validar.py >>"$LOG" 2>&1
+QA_RC=$?
+if [ "$QA_RC" -eq 2 ]; then
+  QA_AVISOS=1
+  echo "  (QA con AVISOS: revisar output/_alertas_validacion.md — no bloquea)" | tee -a "$LOG"
+elif [ "$QA_RC" -ne 0 ]; then
+  echo "  (FALLO: validar.py crasheo con exit $QA_RC — sigue)" | tee -a "$LOG"
+  FALLOS=$((FALLOS+1))
+fi
 run "$PY" 00_Comun/graficar_mia.py
 run "$PY" 00_Comun/archivar_historico.py   # actualiza el histórico maestro (congela meses cerrados)
 run "$PY" 00_Comun/generar_reporte_mensual.py   # arma el .docx modelo (3 gráficos + tablas + lectura auto)
@@ -99,5 +112,9 @@ echo "(El mes en curso sale PROVISIONAL; para el titular cerrado, correr con el 
 if [ "$FALLOS" -gt 0 ]; then
   echo "ATENCION: $FALLOS paso(s) fallaron. Revisar el log: $LOG" | tee -a "$LOG"
   exit 1
+fi
+if [ "$QA_AVISOS" -eq 1 ]; then
+  echo "OK con AVISOS de QA (ver output/_alertas_validacion.md). Ningun paso fallo." | tee -a "$LOG"
+  exit 0
 fi
 echo "OK: todos los pasos corrieron sin error." | tee -a "$LOG"

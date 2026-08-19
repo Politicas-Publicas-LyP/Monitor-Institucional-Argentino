@@ -1,6 +1,6 @@
-# ── ITR — archivos que NO van al repositorio ────────────────────────────────
+# ── MIA — archivos que NO van al repositorio ────────────────────────────────
 # Regla: el repo guarda CÓDIGO, configuración, documentos y los CSV "publicados"
-# (las series *_mensual.csv, el índice itr_*.csv, el puente nombramientos_jueces.csv
+# (las series *_mensual.csv, el índice mia_*.csv, los puentes de los radares
 # y el padrón). NO guarda artefactos regenerables ni archivos de máquina.
 
 # Artefactos de Python
@@ -21,7 +21,9 @@ Thumbs.db
 output/_cache_*
 output/_recaudacion.csv
 output/_balbcrhis.xls
+output/_panhis.xls
 output/_rad-*.jpg
+output/_corrida_mensual_*.log
 
 # Entornos virtuales
 .venv/

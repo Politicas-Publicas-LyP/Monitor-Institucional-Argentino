@@ -21,26 +21,12 @@ import argparse, sys
 from pathlib import Path
 import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "00_Comun"))
-from icia_ensamblado import anchor, load, NO_SUAVIZAR, MACRO, OUTPUT_DIR  # noqa
+from icia_ensamblado import anchor, load, cargar_nucleo, NO_SUAVIZAR, MACRO, OUTPUT_DIR  # noqa
 
-NUCLEO = [
- {"var":"DNU vs Leyes","cat":"Ejecutivo","peso":0.12,"comp":[("dnu_leyes_mensual","cuota_dnu_12m",0.05,0.70,1.0)]},
- {"var":"ATN (federalismo)","cat":"Ejecutivo","peso":0.06,"comp":[("atn_mensual","atn_share",0.001,0.007,1.0)]},
- {"var":"Eficacia de Control","cat":"Legislativo","peso":0.12,"comp":[("eficacia_control_mensual","cumplimiento_art101_12m",0.75,0.10,1.0)]},
- {"var":"Calidad Normativa","cat":"Legislativo","peso":0.10,"comp":[("__derived__","leyes_por_sesion",1.5,0.2,0.6),("sesiones_mensual","cumplimiento_sesiones",0.95,0.40,0.4)]},
- {"var":"Costo del Legislativo","cat":"Legislativo","peso":0.03,"comp":[("costo_legislativo_mensual","costo_legislativo",0.003,0.012,1.0)]},
- {"var":"Desempeño de la Corte","cat":"Judicial","peso":0.15,"comp":[
-    ("resolucion_csjn_mensual","tasa_resolucion",0.95,0.30,0.35),("resolucion_csjn_mensual","mediana_dias",120,730,0.25),
-    ("resolucion_csjn_mensual","originaria_dias",365,1825,0.20),("resolucion_csjn_mensual","csjn_vacantes",0,3,0.20)]},
- {"var":"Cobertura Judicial","cat":"Judicial","peso":0.10,"comp":[
-    ("cobertura_judicial_mensual","tasa_titular",0.90,0.55,0.6),("cobertura_judicial_mensual","tasa_subrogancia",0.05,0.35,0.4)]},
- {"var":"Pauta Publicitaria","cat":"Prensa","peso":0.05,"comp":[("pauta_mensual","intensidad_pauta",0.0,0.004,1.0)]},
- {"var":"Medios estatales","cat":"Prensa","peso":0.04,"comp":[("medios_oficiales_mensual","medios_share",0.0,0.0015,1.0)]},
- {"var":"Financiamiento al Tesoro","cat":"Banco Central","peso":0.06,"comp":[("bcra_financiamiento_mensual","financiamiento",0.02,0.40,1.0)]},
- {"var":"Letras intransferibles","cat":"Banco Central","peso":0.05,"comp":[("bcra_letras_mensual","letras_share",0.0,0.70,1.0)]},
- {"var":"Designación Pdte. BCRA","cat":"Banco Central","peso":0.04,"comp":[("bcra_designacion_mensual","designacion_acuerdo",1,0,1.0)]},
- {"var":"Respeto Carta Orgánica","cat":"Banco Central","peso":0.05,"comp":[("carta_organica_mensual","carta_organica_exceso",0.0,0.5,1.0)]},
-]
+# FUENTE ÚNICA: las variables del núcleo salen de variables.yaml (nucleo: true;
+# con nucleo_comp donde la serie larga difiere del pleno). Antes esta lista vivía
+# hardcodeada acá, duplicando anclas y pesos (riesgo de drift): 2026-08-19.
+NUCLEO = cargar_nucleo()
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument("--desde",default="2020-01"); ap.add_argument("--hasta",default="2026-05")

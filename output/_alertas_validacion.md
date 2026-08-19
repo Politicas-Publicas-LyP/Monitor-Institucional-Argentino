@@ -1,4 +1,4 @@
-# MIA — Validación QA · 2026-08-18 16:41
+# MIA — Validación QA · 2026-08-19 10:03
 
 **Estado:** OK
 **Política:** NOTIFICAR, no bloquear la publicación. (exit 2 = publicar + avisar)
@@ -24,4 +24,4 @@
 | Financiamiento al Tesoro | bcra_financiamiento_mensual | 2026-07 | 1 | 3 |
 | Letras intransferibles | bcra_letras_mensual | 2026-07 | 1 | 3 |
 | Designación Pdte. BCRA | bcra_designacion_mensual | 2026-08 | 0 | 3 |
-| Respeto Carta Orgánica | carta_organica_mensual | 2026-05 | 3 | 3 |
+| Respeto Carta Orgánica | carta_organica_mensual | 2026-07 | 1 | 3 |

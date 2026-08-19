@@ -1,7 +1,15 @@
 # MIA — Definición declarativa de variables (FUENTE ÚNICA DE VERDAD).
-# La leen el ensamblador (icia_ensamblado.py) y los ensambladores de núcleo.
+# La leen el ensamblador (icia_ensamblado.py) y los ensambladores de núcleo
+# (06_Historico/mia_nucleo_*.py, vía cargar_nucleo() de icia_ensamblado — desde
+# 2026-08-19 ya no tienen listas hardcodeadas propias).
 # modo: suavizado (media móvil 12m) | sin_suavizar (estado binario/puntual) | arrastre (evento con decaimiento asimétrico)
 # nucleo: true si la variable entra en el MIA Núcleo (serie larga comparable).
+# nucleo_comp: componentes/anclas que el NÚCLEO usa en lugar de comp, cuando la
+#   serie larga difiere de la del pleno. Hoy solo dos casos, deliberados:
+#   - ATN: el núcleo usa atn_share (anual, existe desde 2003); el pleno usa
+#     atn_share_mensual (solo era Milei).
+#   - Cobertura Judicial: el núcleo usa titular/subrogancia (comparable desde
+#     2017); el pleno agrega sin-cobertura y meses_sin_nombramiento (radar 2026+).
 macro:
   Ejecutivo: 0.30
   Legislativo: 0.20
@@ -19,7 +27,9 @@ variables:
       {archivo: transparencia_v2_mensual, col: tasa_respuesta, mejor: 0.95, peor: 0.30, peso_intra: 0.4, modo: suavizado},
       {archivo: transparencia_v2_mensual, col: tasa_en_plazo, mejor: 0.90, peor: 0.20, peso_intra: 0.6, modo: suavizado}]}
   - {var: "ATN (federalismo)", eje: Ejecutivo, peso: 0.06, nucleo: true, comp: [
-      {archivo: atn_mensual, col: atn_share_mensual, mejor: 0.001, peor: 0.007, peso_intra: 1.0, modo: suavizado}]}
+      {archivo: atn_mensual, col: atn_share_mensual, mejor: 0.001, peor: 0.007, peso_intra: 1.0, modo: suavizado}],
+     nucleo_comp: [
+      {archivo: atn_mensual, col: atn_share, mejor: 0.001, peor: 0.007, peso_intra: 1.0, modo: suavizado}]}
   - {var: "Eficacia de Control", eje: Legislativo, peso: 0.12, nucleo: true, comp: [
       {archivo: eficacia_control_mensual, col: cumplimiento_art101_12m, mejor: 0.75, peor: 0.10, peso_intra: 1.0, modo: suavizado}]}
   - {var: "Calidad Normativa", eje: Legislativo, peso: 0.10, nucleo: true, comp: [
@@ -35,7 +45,10 @@ variables:
   - {var: "Cobertura Judicial", eje: Judicial, peso: 0.10, nucleo: true, comp: [
       {archivo: cobertura_judicial_mensual, col: tasa_titular, mejor: 0.90, peor: 0.55, peso_intra: 0.45, modo: suavizado},
       {archivo: cobertura_judicial_mensual, col: tasa_sin_cobertura, mejor: 0.0, peor: 0.20, peso_intra: 0.25, modo: suavizado},
-      {archivo: cobertura_judicial_mensual, col: meses_sin_nombramiento, mejor: 6, peor: 24, peso_intra: 0.30, modo: sin_suavizar}]}
+      {archivo: cobertura_judicial_mensual, col: meses_sin_nombramiento, mejor: 6, peor: 24, peso_intra: 0.30, modo: sin_suavizar}],
+     nucleo_comp: [
+      {archivo: cobertura_judicial_mensual, col: tasa_titular, mejor: 0.90, peor: 0.55, peso_intra: 0.6, modo: suavizado},
+      {archivo: cobertura_judicial_mensual, col: tasa_subrogancia, mejor: 0.05, peor: 0.35, peso_intra: 0.4, modo: suavizado}]}
   - {var: "Escrutinio Abierto", eje: Prensa, peso: 0.06, nucleo: false, comp: [
       {archivo: escrutinio_mensual, col: escrutinio_12m, mejor: 0.85, peor: 0.30, peso_intra: 1.0, modo: suavizado}]}
   - {var: "Pauta Publicitaria", eje: Prensa, peso: 0.05, nucleo: true, comp: [

@@ -1,6 +1,13 @@
 """
-ICIA — Módulo 10: Integridad Pública (Poder Judicial, 10%)
-===========================================================
+ICIA — Módulo 10: Integridad Pública (Poder Judicial) — SECUNDARIA / EXPLORATORIA
+=================================================================================
+>>> NO ALIMENTA EL ÍNDICE. <<< Ninguna variable de variables.yaml consume su salida
+(integridad_mensual_*.csv) y no está en los orquestadores: "Control de la corrupción"
+se descartó por falta de dato duro y su peso se redistribuyó en Corte + Cobertura.
+Se conserva como exploración (PIA/OA) por si algún día se reincorpora la variable;
+correrlo a mano si se quiere refrescar la serie.
+
+Contexto original:
 La métrica original ("nuevos procesamientos a funcionarios") no tiene dataset
 confiable. Sustitución acordada (opción A): ACTIVIDAD DE PERSECUCIÓN del sistema
 anticorrupción, medida por la Procuraduría de Investigaciones Administrativas (PIA,

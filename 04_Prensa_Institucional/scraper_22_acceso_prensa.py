@@ -53,12 +53,9 @@ OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output"
 # (1) TABLA MANTENIDA — régimen de acceso de la prensa en Casa Rosada.
 # Cada tramo: (desde 'AAAA-MM', hasta 'AAAA-MM' o None=en curso, nivel, nota/fuente).
 # nivel: 1.0 acceso pleno / 0.5 restricción parcial / 0.0 cierre.
-#
-# >>> PENDIENTE / CONFIRMAR <<<
-# La fecha y el alcance del cierre de la sala de periodistas de Casa Rosada son un
-# PLACEHOLDER hasta confirmar con fuente datada. Editar el tramo de abajo con la fecha
-# real (y si hubo reapertura parcial, agregar un tramo a 0.5). No publicar el valor de
-# esta variable hasta confirmar.
+# Tramos DATADOS y en producción (cierre abr-2026 y reapertura may-2026 registrados).
+# Ante un hecho nuevo (cierre, restricción parcial, reapertura): agregar el tramo con
+# su fecha y fuente, cerrando el "hasta" del tramo anterior. Human-in-the-loop.
 # ----------------------------------------------------------------------------
 ACREDITACIONES = [
     ("2015-12", "2026-03", 1.0, "Régimen de acreditaciones y sala de prensa operativos"),
@@ -200,8 +197,6 @@ def main() -> int:
     out_csv = OUTPUT_DIR / f"acceso_prensa_mensual_{stamp}.csv"
     out.to_csv(out_csv, index=False, encoding="utf-8")
     log.info("CSV guardado: %s", out_csv)
-    log.warning("Recordá CONFIRMAR la fecha/alcance del cierre de la sala de prensa en ACREDITACIONES "
-                "antes de publicar esta variable.")
     return 0
 
 

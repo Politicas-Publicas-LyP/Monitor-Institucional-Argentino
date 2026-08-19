@@ -68,7 +68,8 @@ def _to_num(serie: pd.Series) -> pd.Series:
 
 def medios_anual(anio: int, s: requests.Session) -> dict | None:
     cache = OUTPUT_DIR / f"_cache_medios_{anio}.csv"
-    if cache.exists():
+    usar_cache = anio < datetime.now().year   # cachear SOLO años cerrados; el año en curso se recalcula
+    if usar_cache and cache.exists():
         r = pd.read_csv(cache).iloc[0]
         return {"share": float(r["share"]), "medios_dev": float(r["medios_dev"])}
 
@@ -108,7 +109,8 @@ def medios_anual(anio: int, s: requests.Session) -> dict | None:
         return None
     log.info("DGSIAF %s: filas medios=%d | match: %s", anio, int(mask.sum()), hit_cols)
     res = {"share": round(medios / tot, 8), "medios_dev": round(medios, 1)}
-    pd.DataFrame([{"anio": anio, **res}]).to_csv(cache, index=False)
+    if usar_cache:   # no cachear el año en curso: se recalcula en cada corrida
+        pd.DataFrame([{"anio": anio, **res}]).to_csv(cache, index=False)
     log.info("DGSIAF %s: medios_devengado=%.0f | share=%.6f (%.4f%% del gasto)",
              anio, medios, res["share"], res["share"] * 100)
     return res

@@ -20,41 +20,12 @@ variable ausente (AGN) no altera el peso macro del poder.
 
 Salida: output/mia_mensual.csv  +  output/mia_reporte.md
 Uso:    py icia_ensamblado.py --desde 2023-01 --hasta 2026-05
-Requisitos: pip install pandas
+Requisitos: pip install pandas pyyaml
 
-ANCLAS VIGENTES (v_best -> 100 ; v_worst -> 0):
-  Ejecutivo (35%)
-    DNU vs Leyes (12%)            cuota DNU 12m      0.05 -> 100 ; 0.70 -> 0
-    Discrecionalidad (13%)        presup. aprobado   1 -> 100 ; 0 -> 0   (.6, SIN suavizar)
-                                  modif. por decreto 5 -> 100 ; 12 -> 0  (.4)
-    Transparencia (5%)            tasa respuesta     0.95 -> 100 ; 0.30 -> 0 (.4)
-                                  tasa en plazo      0.90 -> 100 ; 0.20 -> 0 (.6)
-    ATN — federalismo (6%)        % del gasto (devengado) 0.001 -> 100 ; 0.007 -> 0
-  Legislativo (25%)
-    Eficacia de control (12%)     cumpl. art.101 12m 0.75 -> 100 ; 0.10 -> 0
-    Calidad normativa (10%)       leyes por sesión   1.5 -> 100 ; 0.2 -> 0   (.6)
-                                  cumpl. sesiones    0.95 -> 100 ; 0.40 -> 0 (.4)
-    Costo del Legislativo (3%)    % del gasto total  0.003 -> 100 ; 0.012 -> 0
-  Judicial (25%)
-    Desempeño de la Corte (15%)   tasa resolución    0.95 -> 100 ; 0.30 -> 0 (.35)
-                                  mediana días       120 -> 100 ; 730 -> 0   (.25)
-                                  originaria días    365 -> 100 ; 1825 -> 0  (.20)
-                                  vacantes Corte     0 -> 100 ; 3 -> 0        (.20)
-    (Control de la corrupción descartado por falta de dato duro; su 8% se redistribuyó en Corte+Cobertura)
-    Cobertura judicial (10%)      titularidad        0.90 -> 100 ; 0.55 -> 0 (.6)
-                                  subrogancia        0.05 -> 100 ; 0.35 -> 0 (.4)
-  Prensa (15%)
-    Escrutinio abierto (6%)       conf./(conf+cad)   0.85 -> 100 ; 0.30 -> 0
-    Pauta oficial (5%)            % del gasto total  0.0 -> 100 ; 0.004 -> 0
-    Causas contra periodistas (4%) acciones 12m      0 -> 100 ; 20 -> 0
-    Medios estatales (4%)         % del gasto (medios)    0.0 -> 100 ; 0.0015 -> 0
-    Acceso de la prensa (4%)      acceso estructural 1.0 -> 100 ; 0.0 -> 0 (.5, SIN suavizar)
-                                  restricciones 12m  0 -> 100 ; 40 -> 0      (.5)
-  Banco Central (15%)
-    Financiamiento al Tesoro (6%) adelantos/base mon. 0.02 -> 100 ; 0.40 -> 0
-    Letras intransferibles (5%)   letras/activo BCRA  0.0 -> 100 ; 0.70 -> 0
-    Designación Pdte. BCRA (4%)   con acuerdo Senado  1 -> 100 ; 0 -> 0  (binaria, SIN suavizar)
-    Respeto Carta Orgánica (5%)   exceso s/ tope art.20  0.0 -> 100 ; 0.5 -> 0
+ANCLAS, PESOS Y COMPONENTES: viven SOLO en variables.yaml (fuente única de verdad;
+pesos macro 30/20/20/15/15). Este docstring no las duplica a propósito: una copia
+acá se desactualiza y miente (pasó: decía 35/25/25/15 y anclas viejas de Cobertura).
+Para cambiar una variable, ancla o peso -> editar variables.yaml, no el código.
 """
 from __future__ import annotations
 
@@ -94,6 +65,25 @@ def _cargar_config():
 
 
 MACRO, REG, NO_SUAVIZAR, CARRYOVER, CARRY_MESES = _cargar_config()
+
+
+def cargar_nucleo() -> list[dict]:
+    """Registro del MIA NÚCLEO (serie larga comparable), derivado de variables.yaml:
+    entran las variables con `nucleo: true`; si una define `nucleo_comp`, el núcleo
+    usa esos componentes/anclas en lugar de los del pleno (hoy: ATN usa el share
+    anual y Cobertura Judicial usa titular/subrogancia — ver comentarios del YAML).
+    Lo consumen 06_Historico/mia_nucleo_mensual.py y mia_nucleo_historico.py, que
+    antes duplicaban esta lista hardcodeada (riesgo de drift silencioso)."""
+    import yaml
+    cfg = yaml.safe_load((Path(__file__).resolve().parent / "variables.yaml").read_text(encoding="utf-8"))
+    reg = []
+    for v in cfg["variables"]:
+        if not v.get("nucleo", False):
+            continue
+        comp = [(c["archivo"], c["col"], c["mejor"], c["peor"], c["peso_intra"])
+                for c in v.get("nucleo_comp", v["comp"])]
+        reg.append({"var": v["var"], "cat": v["eje"], "peso": float(v["peso"]), "comp": comp})
+    return reg
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-7s | %(message)s",
                     datefmt="%H:%M:%S")
@@ -213,7 +203,7 @@ def main() -> int:
         out[f"sub_{cat}"] = (sub.mul(w, axis=1).sum(axis=1, min_count=1) /
                              wmat.sum(axis=1).replace(0, float("nan"))) * 100
 
-    # MIA = promedio de sub-índices con pesos macro FIJOS (35/25/25/15)
+    # MIA = promedio de sub-índices con pesos macro FIJOS (los de variables.yaml: 30/20/20/15/15)
     subm = pd.DataFrame({c: out[f"sub_{c}"] for c in MACRO})
     wM = pd.Series(MACRO)
     wmat = subm.notna().mul(wM, axis=1)
