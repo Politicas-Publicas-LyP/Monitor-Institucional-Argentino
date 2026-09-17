@@ -50,10 +50,19 @@ RADAR_CSV = OUTPUT_DIR / "nombramientos_jueces.csv"
 # El radar corre en GitHub Actions (necesita IP del exterior); este scraper corre en una
 # máquina argentina (datos.jus exige IP AR). Para que el flujo no quede congelado, leemos el
 # CSV puente DIRECTO del repo (raw de GitHub), accesible desde Argentina, y caemos a la copia
-# local si no hay red. Completar con el repo donde vive el radar, p.ej.:
-#   https://raw.githubusercontent.com/USUARIO/REPO/main/output/nombramientos_jueces.csv
-# Se puede fijar acá o, mejor, por variable de entorno MIA_RADAR_CSV_URL (no toca el código).
-RADAR_CSV_URL = os.environ.get("MIA_RADAR_CSV_URL", "")
+# local si no hay red.
+# OJO con el slug: el repo se renombró a `Monitor-Institucional-Argentino`. GitHub redirige el
+# nombre viejo (…-ITR-) en la web, pero `raw.githubusercontent.com` sobre el slug viejo devuelve
+# contenido DESACTUALIZADO (verificado 2026-09-17: le faltaban las bajas de julio). Por eso el
+# default ya apunta al nombre nuevo; MIA_RADAR_CSV_URL sólo hace falta para apuntar a otro lado.
+REPO_RAW = "https://raw.githubusercontent.com/Politicas-Publicas-LyP/Monitor-Institucional-Argentino/main/output"
+RADAR_CSV_URL = os.environ.get("MIA_RADAR_CSV_URL") or f"{REPO_RAW}/nombramientos_jueces.csv"
+if "-ITR-" in RADAR_CSV_URL:
+    # (el logger todavía no existe en este punto del módulo: se avisa por stderr)
+    print("AVISO: MIA_RADAR_CSV_URL apunta al slug VIEJO del repo (...-ITR-), que sirve datos "
+          "rancios. Se ignora y se usa el nombre nuevo. Borra esa variable de entorno.",
+          file=sys.stderr)
+    RADAR_CSV_URL = f"{REPO_RAW}/nombramientos_jueces.csv"
 # PADRÓN VIVO (padron_judicial.py): tasas de cobertura recalculadas en vivo con las altas/bajas
 # del BORA. Si existe, se usa para SOBREESCRIBIR el mes corriente (stock) con valor «estimado»,
 # de modo que la cobertura no quede congelada en el último snapshot oficial. Se reconcilia solo

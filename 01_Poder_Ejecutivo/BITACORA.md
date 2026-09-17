@@ -48,11 +48,41 @@ Resumen: Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presup
   cerrados quedan fijos en `output/atn_obs_mensual.csv` (versionado) y no se recalculan en corridas
   futuras. **Fallback** al share anual donde no hay mensual (años viejos) → no rompe el núcleo.
   Caché solo de años CERRADOS (el año en curso se recalcula).
+  **CORREGIDO 2026-09-17** (tres bugs, ver registro): «sin dato» ya no se publica como 0,0;
+  el mes EN CURSO ya no se congela con su devengado parcial; las cachés envenenadas se
+  auto-descartan.
 - **Fuente:** DGSIAF crédito mensual y anual
-- **Última actualización:** 2026-06-29
-- **Pendientes:** ATN histórico para llegar a Macri (parqueado).
+- **Última actualización:** 2026-09-17
+- **Pendientes:** confirmar cómo se etiqueta el ATN en los ejercicios 2003–2016
+  (`py scraper_16_atn.py --diagnostico 2015` desde IP AR) y, con eso, decidir si se amplía el
+  patrón o se pasa a identificar el ATN por CÓDIGO de la estructura programática.
 
 ## Registro de cambios
+- 2026-09-17 — **Tres bugs del ATN corregidos** (los tres del mismo tipo: un valor que no se
+  pudo medir se estaba publicando como si fuera una medición).
+  1. **SIN DATO publicado como CERO.** Si ninguna fila del ejercicio matcheaba la etiqueta
+     «Aportes del Tesoro Nacional», el scraper devolvía `share = 0,0`. Con anclas
+     `mejor=0,001 / peor=0,007`, un 0 normaliza a **100 = federalismo ideal**. Así quedaron
+     **2003–2016 completos en 0,0** (168 meses), inflando el eje Ejecutivo del **MIA Núcleo**
+     en toda la serie larga. Ahora, 0 filas matcheadas sobre un devengado total > 0 devuelve
+     **SIN DATO** (`None`), avisa por log y sugiere `--diagnostico`.
+  2. **El mes en curso quedaba congelado en su valor PARCIAL.** `atn_obs_mensual.csv` es
+     inmutable por diseño, pero persistía también el mes corriente; al cerrar ese mes, la
+     regla de inmutabilidad lo dejaba fijo con el devengado parcial de la última corrida.
+     **2026-08 estaba en 0,0 observado el 19-ago** (mes a medio transcurrir) y se habría
+     publicado así para siempre. Ahora el mes en curso **nunca** entra al store: se usa sólo
+     en memoria para el nowcast de la serie y se observa recién en la primera corrida del mes
+     siguiente. Mismo patrón que el bug de caché de `scraper_02_calidad_normativa.py`.
+  3. **Cachés envenenadas.** Los 0,0 de (1) quedaban guardados en `_cache_atn_{año}.csv` y
+     `_cache_atn_mensual_{año}.csv` como dato definitivo, así que arreglar el patrón no
+     alcanzaba: la caché los seguía sirviendo. Ahora una caché anual con `atn_dev = 0`, o una
+     mensual con los 12 meses en 0, se **descarta y recalcula**.
+  Además se amplió `PATRON` a «Aporte(s) [no reintegrables] del Tesoro [Nacional]» (la
+  redacción varía entre ejercicios) sin matchear la FUENTE de financiamiento «Tesoro Nacional».
+  Purga aplicada a `output/atn_obs_mensual.csv`: se borraron los 168 ceros artificiales de
+  2003-01..2016-12 y el parcial congelado de 2026-08. **Requiere re-correr desde IP AR.**
+  OJO: los ceros de 2020-01, 2021-04/05, 2022-08/10, 2024-07/08/09/12, 2025-11, 2026-05/06
+  **son reales** (meses sin ATN) y se conservan: el año tiene matches, el mes no tiene monto.
 - 2026-08-19 — `scraper_01_dnu_leyes.py` ahora usa la fuente compartida `00_Comun/infoleg_source.py`
   (antes duplicaba adentro la descarga/parseo/fechas). La copia local `infoleg_source.py` de esta
   carpeta se retiró; `scraper_04` la importa de 00_Comun vía `sys.path`. Comportamiento verificado

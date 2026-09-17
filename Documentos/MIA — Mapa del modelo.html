@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MIA — Mapa del modelo</title>
+<style>
+  /* ── Paleta (instancia de referencia del método dataviz, validada con
+     validate_palette.js: 3 slots categóricos all-pairs en ambos modos) ── */
+  :root, .viz {
+    color-scheme: light;
+    --surface-1:#fcfcfb; --plane:#f9f9f7;
+    --ink:#0b0b0b; --ink-2:#52514e; --ink-muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --hairline:rgba(11,11,11,.10);
+    --rol-fuente:#2a78d6; --rol-script:#eb6834; --rol-dato:#1baf7a;
+    --good:#006300; --critical:#d03b3b; --warning:#fab219;
+    --marca:#c1121c;
+    --seq-1:#cde2fb; --seq-2:#9ec5f4; --seq-3:#6da7ec; --seq-4:#3987e5; --seq-5:#256abf; --seq-6:#184f95; --seq-7:#0d366b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1:#1a1a19; --plane:#0d0d0d;
+      --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --hairline:rgba(255,255,255,.10);
+      --rol-fuente:#3987e5; --rol-script:#d95926; --rol-dato:#199e70;
+      --good:#0ca30c; --critical:#d03b3b;
+      --marca:#e8564a;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1:#1a1a19; --plane:#0d0d0d;
+    --ink:#ffffff; --ink-2:#c3c2b7; --ink-muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --hairline:rgba(255,255,255,.10);
+    --rol-fuente:#3987e5; --rol-script:#d95926; --rol-dato:#199e70;
+    --good:#0ca30c; --critical:#d03b3b;
+    --marca:#e8564a;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; }
+  body {
+    background:var(--plane); color:var(--ink);
+    font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+    display:flex; flex-direction:column; min-height:100vh;
+  }
+  a { color:inherit; }
+
+  /* ── encabezado ── */
+  header { padding:18px 22px 12px; border-bottom:1px solid var(--hairline); background:var(--surface-1); }
+  h1 { margin:0 0 2px; font-size:19px; font-weight:700; color:var(--marca); letter-spacing:-.01em; }
+  .sub { color:var(--ink-2); font-size:12.5px; }
+  .sub b { color:var(--ink); font-weight:600; }
+
+  /* ── fila de tiles (los valores, sin depender del hover) ── */
+  .tiles { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .tile {
+    background:var(--surface-1); border:1px solid var(--hairline); border-radius:10px;
+    padding:8px 12px; min-width:108px;
+  }
+  .tile .k { font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--ink-muted); }
+  .tile .v { font-size:21px; font-weight:650; line-height:1.15; margin-top:1px; }
+  .tile.hero .v { font-size:30px; }
+  .tile .d { font-size:11.5px; color:var(--ink-2); }
+  .up { color:var(--good); } .down { color:var(--critical); }
+
+  /* ── una sola fila de filtros, arriba de todo lo que ordena ── */
+  .filtros {
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+    padding:10px 22px; background:var(--surface-1); border-bottom:1px solid var(--hairline);
+    position:sticky; top:0; z-index:20;
+  }
+  .grupo { display:flex; gap:4px; align-items:center; }
+  .grupo > .lbl { font-size:11px; color:var(--ink-muted); margin-right:2px; text-transform:uppercase; letter-spacing:.04em; }
+  button, select, input[type=search] {
+    font:inherit; font-size:12.5px; color:var(--ink); background:var(--surface-1);
+    border:1px solid var(--axis); border-radius:7px; padding:5px 9px; cursor:pointer;
+  }
+  input[type=search] { cursor:text; min-width:190px; }
+  button:hover, select:hover { background:var(--grid); }
+  button[aria-pressed="true"] { background:var(--ink); color:var(--surface-1); border-color:var(--ink); }
+  .chip { display:inline-flex; align-items:center; gap:5px; }
+  .chip i { width:9px; height:9px; border-radius:2px; display:inline-block; }
+  .sep { width:1px; height:22px; background:var(--hairline); }
+
+  /* ── cuerpo ── */
+  main { flex:1; display:flex; min-height:0; }
+  #lienzo { flex:1; position:relative; min-width:0; background:var(--plane); }
+  svg { display:block; width:100%; height:100%; touch-action:none; }
+  .zoombar { position:absolute; left:12px; bottom:12px; display:flex; gap:4px; }
+  .zoombar button { padding:4px 9px; }
+
+  /* ── aristas y nodos ── */
+  .rot-eje { fill:var(--ink); opacity:.085; font-weight:800; letter-spacing:.06em;
+             text-anchor:middle; text-transform:uppercase; pointer-events:none; }
+  .link { fill:none; stroke:var(--axis); stroke-linecap:round; }
+  .link.config { stroke:var(--grid); }
+  .link.alerta { stroke-dasharray:5 4; }
+  .link.calcula { stroke-dasharray:1.5 3.5; }
+  .link.apagado { opacity:.10; }
+  .link.activo { stroke:var(--ink); opacity:1; }
+  .nodo { cursor:pointer; }
+  .nodo .forma { stroke-width:2; }
+  .nodo.apagado { opacity:.13; }
+  .nodo .halo { fill:none; stroke:var(--ink); stroke-width:2.5; opacity:0; }
+  .nodo.activo .halo, .nodo:focus-visible .halo { opacity:1; }
+  .nodo:focus { outline:none; }
+  .rot { font-size:10.5px; fill:var(--ink-2); paint-order:stroke; stroke:var(--surface-1); stroke-width:3.5px; stroke-linejoin:round; }
+  .rot.fuerte { fill:var(--ink); font-weight:600; font-size:11.5px; }
+  .valor { font-size:10.5px; font-weight:650; fill:var(--ink); }
+  .fuera .forma { stroke-dasharray:3 3; }
+  .arco-track { fill:none; stroke:var(--ink); opacity:.14; }
+  .arco { fill:none; stroke:var(--ink); stroke-linecap:round; }
+
+  /* ── tooltip ── */
+  #tip {
+    position:fixed; pointer-events:none; z-index:60; max-width:290px; opacity:0;
+    background:var(--surface-1); color:var(--ink); border:1px solid var(--hairline);
+    border-radius:9px; padding:8px 10px; box-shadow:0 6px 22px rgba(0,0,0,.16);
+    font-size:12.5px; transition:opacity .09s;
+  }
+  #tip .t { font-weight:650; margin-bottom:2px; }
+  #tip .n { font-size:19px; font-weight:650; line-height:1.2; }
+  #tip .m { color:var(--ink-2); font-size:11.5px; }
+
+  /* ── panel de detalle ── */
+  aside {
+    width:340px; flex:0 0 340px; background:var(--surface-1); border-left:1px solid var(--hairline);
+    padding:16px 18px; overflow:auto;
+  }
+  aside h2 { font-size:15px; margin:0 0 3px; }
+  aside .rolete { font-size:11px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.05em; }
+  aside .nota { color:var(--ink-2); font-size:12.5px; margin:10px 0; }
+  aside dl { margin:10px 0 0; display:grid; grid-template-columns:auto 1fr; gap:5px 10px; font-size:12px; }
+  aside dt { color:var(--ink-muted); }
+  aside dd { margin:0; color:var(--ink); overflow-wrap:anywhere; }
+  aside h3 { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-muted); margin:16px 0 6px; }
+  aside ul { list-style:none; margin:0; padding:0; font-size:12.5px; }
+  aside li { padding:3px 0; border-bottom:1px solid var(--hairline); }
+  aside li button { border:0; background:none; padding:0; text-align:left; color:var(--ink); cursor:pointer; font-size:12.5px; }
+  aside li button:hover { text-decoration:underline; background:none; }
+  aside li .peso { color:var(--ink-muted); font-size:11px; }
+  .vacio { color:var(--ink-muted); font-size:12.5px; }
+
+  /* ── leyenda ── */
+  .leyenda { display:flex; gap:14px; flex-wrap:wrap; padding:9px 22px; background:var(--surface-1);
+             border-top:1px solid var(--hairline); font-size:11.5px; color:var(--ink-2); align-items:center; }
+  .leyenda .it { display:inline-flex; align-items:center; gap:6px; }
+  .leyenda svg { width:auto; height:14px; }
+  #escala { display:none; align-items:center; gap:7px; }
+  #escala .barra { width:120px; height:9px; border-radius:5px;
+    background:linear-gradient(90deg,var(--seq-1),var(--seq-2),var(--seq-3),var(--seq-4),var(--seq-5),var(--seq-6),var(--seq-7)); }
+
+  /* ── tabla (gemela accesible) ── */
+  #tabla { display:none; padding:18px 22px 40px; overflow:auto; }
+  #tabla h2 { font-size:14px; margin:18px 0 8px; }
+  table { border-collapse:collapse; width:100%; font-size:12px; font-variant-numeric:tabular-nums; }
+  th, td { text-align:left; padding:5px 8px; border-bottom:1px solid var(--hairline); vertical-align:top; }
+  th { color:var(--ink-muted); font-weight:600; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em;
+       position:sticky; top:0; background:var(--surface-1); }
+  td.num { text-align:right; }
+  footer { padding:12px 22px 20px; color:var(--ink-muted); font-size:11.5px; background:var(--surface-1); }
+  @media (max-width:900px) { aside { display:none; } .tile { min-width:92px; } }
+  @media (prefers-reduced-motion:reduce) { #tip { transition:none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>MIA — Mapa del modelo</h1>
+  <div class="sub" id="sub"></div>
+  <div class="tiles" id="tiles"></div>
+</header>
+
+<div class="filtros" role="group" aria-label="Filtros del mapa">
+  <input type="search" id="buscar" placeholder="Buscar variable, script o fuente…" aria-label="Buscar en el mapa">
+  <div class="grupo" id="chips-eje" aria-label="Filtrar por eje"><span class="lbl">Eje</span></div>
+  <div class="sep"></div>
+  <div class="grupo" id="chips-rol" aria-label="Filtrar por rol"><span class="lbl">Rol</span></div>
+  <div class="sep"></div>
+  <div class="grupo">
+    <span class="lbl">Vista</span>
+    <select id="vista" aria-label="Vista predefinida">
+      <option value="todo">Todo el sistema</option>
+      <option value="valor">Solo la cadena del valor publicado</option>
+      <option value="nucleo">Solo el Núcleo (serie larga)</option>
+      <option value="satelites">Satélites, alertas y tablas a mano</option>
+      <option value="afuera">Lo que quedó fuera del pipeline</option>
+    </select>
+  </div>
+  <div class="sep"></div>
+  <div class="grupo">
+    <span class="lbl">Color</span>
+    <button id="b-color" aria-pressed="false" title="Alternar entre color por rol y color por score">por rol</button>
+    <button id="b-etiq" aria-pressed="false" title="Mostrar todas las etiquetas o solo las claves">etiquetas: claves</button>
+  </div>
+  <div class="sep"></div>
+  <div class="grupo">
+    <button id="b-vistaform" aria-pressed="false">Ver tabla</button>
+    <button id="b-tema" title="Alternar tema claro/oscuro">Tema</button>
+  </div>
+</div>
+
+<main>
+  <div id="lienzo">
+    <svg id="svg" role="img" aria-label="Grafo del modelo del MIA: fuentes oficiales, scripts, series, 18 variables, 5 ejes y el índice">
+      <g id="zoom">
+        <g id="capa-ejes"></g>
+        <g id="capa-links"></g>
+        <g id="capa-nodos"></g>
+      </g>
+    </svg>
+    <div class="zoombar">
+      <button id="z-mas" aria-label="Acercar">+</button>
+      <button id="z-menos" aria-label="Alejar">−</button>
+      <button id="z-fit">Ajustar</button>
+      <button id="z-reset">Reordenar</button>
+    </div>
+  </div>
+  <aside id="panel" aria-live="polite"></aside>
+</main>
+
+<div class="leyenda" id="leyenda">
+  <span class="it"><svg viewBox="0 0 16 16"><rect x="3" y="3" width="10" height="10" rx="2" fill="var(--rol-fuente)"/></svg> Fuente oficial</span>
+  <span class="it"><svg viewBox="0 0 16 16"><polygon points="8,2 14,5.5 14,10.5 8,14 2,10.5 2,5.5" fill="var(--rol-script)"/></svg> Script</span>
+  <span class="it"><svg viewBox="0 0 16 16"><polygon points="8,2.5 13.5,8 8,13.5 2.5,8" fill="var(--rol-dato)"/></svg> Dato (serie, puente, tabla, config, salida)</span>
+  <span class="it"><svg viewBox="0 0 34 16"><circle cx="6" cy="8" r="4.5" fill="var(--surface-1)" stroke="var(--ink)" stroke-width="2"/><circle cx="19" cy="8" r="6.5" fill="var(--ink)"/><circle cx="30" cy="8" r="3" fill="var(--ink)"/></svg> Variable · eje · MIA</span>
+  <span class="sep"></span>
+  <span class="it"><svg viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" stroke="var(--axis)" stroke-width="3"/></svg> Flujo del dato (grosor = peso)</span>
+  <span class="it"><svg viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" stroke="var(--axis)" stroke-width="2" stroke-dasharray="5 4"/></svg> Alerta / insumo (no es el valor publicado)</span>
+  <span class="it"><svg viewBox="0 0 26 8"><line x1="1" y1="4" x2="25" y2="4" stroke="var(--axis)" stroke-width="2" stroke-dasharray="1.5 3.5"/></svg> Lo calcula</span>
+  <span class="it">◌ Trazo punteado en el borde = fuera del pipeline</span>
+  <span class="it" id="escala"><span>Score</span><span>0</span><span class="barra"></span><span>100</span></span>
+</div>
+
+<section id="tabla">
+  <p class="sub">Vista de tabla — el gemelo accesible del grafo: los mismos datos sin depender del color ni del hover.</p>
+  <h2>Nodos</h2>
+  <table id="t-nodos"><thead><tr>
+    <th>Nombre</th><th>Rol</th><th>Eje</th><th class="num">Score</th><th class="num">Δ mes</th><th>Detalle</th>
+  </tr></thead><tbody></tbody></table>
+  <h2>Conexiones</h2>
+  <table id="t-links"><thead><tr>
+    <th>Desde</th><th>Hacia</th><th>Tipo</th><th class="num">Peso</th><th>Columna / anclas</th>
+  </tr></thead><tbody></tbody></table>
+</section>
+
+<footer id="pie"></footer>
+<div id="tip" role="status" aria-live="polite"></div>
+<script>
+"use strict";
+const DATOS = {"nodes": [{"id": "f_infoleg", "label": "InfoLEG — Normativa Nacional", "corto": "InfoLEG", "tipo": "fuente", "eje": "Infra", "nota": "Dataset ZIP de la 1ª Sección del BO desde 1997. Marca oficial clase_norma='DNU' (ADR 0006).", "fuera": false, "meta": [["Host", "datos.jus.gob.ar"], ["Requiere IP argentina", "sí — bloquea datacenter/exterior"]], "compartida": false}, {"id": "f_dgsiaf", "label": "DGSIAF — crédito anual y mensual", "corto": "DGSIAF", "tipo": "fuente", "eje": "Infra", "nota": "Ejecución presupuestaria. Cuatro variables salen de acá (ATN, pauta, costo del Congreso, medios estatales).", "fuera": false, "meta": [["Host", "dgsiaf-repo.mecon.gob.ar"], ["Requiere IP argentina", "sí — bloquea datacenter/exterior"]], "compartida": true}, {"id": "f_opc", "label": "OPC — modificaciones presupuestarias", "corto": "OPC", "tipo": "fuente", "eje": "Ejecutivo", "nota": "Única fuente que ata cada reasignación a su instrumento (DA/DNU). Publica por instrumento desde 2024.", "fuera": false, "meta": [["Host", "opc.gob.ar"], ["Requiere IP argentina", "no"]], "compartida": false}, {"id": "f_aaip", "label": "AAIP — microdato sip.csv", "corto": "AAIP", "tipo": "fuente", "eje": "Ejecutivo", "nota": "Una fila por pedido de acceso a la información (Ley 27.275).", "fuera": false, "meta": [["Host", "descarga.aaip.gob.ar"], ["Requiere IP argentina", "sí — bloquea datacenter/exterior"]], "compartida": false}, {"id": "f_hcdn_proy", "label": "HCDN — buscador de proyectos", "corto": "HCDN · proyectos", "tipo": "fuente", "eje": "Legislativo", "nota": "Frágil y lento; no envía el certificado TLS intermedio (se resuelve con truststore).", "fuera": false, "meta": [["Host", "hcdn.gob.ar"], ["Requiere IP argentina", "no"]], "compartida": false}, {"id": "f_hcdn_ses", "label": "HCDN — sesiones", "corto": "HCDN · sesiones", "tipo": "fuente", "eje": "Legislativo", "nota": "HTML server-side; una sola página trae todos los períodos.", "fuera": false, "meta": [["Host", "hcdn.gob.ar"], ["Requiere IP argentina", "no"]], "compartida": false}, {"id": "f_senado", "label": "Senado — Informes JGM", "corto": "Senado · JGM", "tipo": "fuente", "eje": "Legislativo", "nota": "Tabla estable pero con lag; a veces omite informes que fueron a Diputados.", "fuera": false, "meta": [["Host", "senado.gob.ar"], ["Requiere IP argentina", "no"]], "compartida": false}, {"id": "f_csjn", "label": "CSJN — Anuarios estadísticos (PDF)", "corto": "CSJN · anuarios", "tipo": "fuente", "eje": "Judicial", "nota": "Cadencia ANUAL: entre anuarios la variable queda constante por diseño (ADR: no es un bug).", "fuera": false, "meta": [["Host", "csjn.gov.ar"], ["Requiere IP argentina", "no"]], "compartida": false}, {"id": "f_magistrados", "label": "datos.jus — Magistrados (CKAN)", "corto": "datos.jus · magistrados", "tipo": "fuente", "eje": "Judicial", "nota": "Snapshot oficial de cargos; se actualiza ~cada 2 años. De ahí la necesidad del padrón vivo.", "fuera": false, "meta": [["Host", "datos.jus.gob.ar"], ["Requiere IP argentina", "sí — bloquea datacenter/exterior"]], "compartida": false}, {"id": "f_bora", "label": "Boletín Oficial — 1ª Sección", "corto": "BORA", "tipo": "fuente", "eje": "Infra", "nota": "Lectura por fecha (/seccion/primera/AAAAMMDD). Accesible desde el exterior: por eso los radares corren en la nube.", "fuera": false, "meta": [["Host", "boletinoficial.gob.ar"], ["Requiere IP argentina", "no"]], "compartida": true}, {"id": "f_casarosada", "label": "Casa Rosada — conferencias y discursos", "corto": "Casa Rosada", "tipo": "fuente", "eje": "Prensa", "nota": "Joomla, HTML server-side, paginado ?start=N.", "fuera": false, "meta": [["Host", "casarosada.gob.ar"], ["Requiere IP argentina", "no"]], "compartida": false}, {"id": "f_fopea", "label": "FOPEA — Monitoreo (WP REST)", "corto": "FOPEA", "tipo": "fuente", "eje": "Prensa", "nota": "La categoría del caso vive en el HTML de la ficha como /tag/<slug>/, no en la REST.", "fuera": false, "meta": [["Host", "monitoreo.fopea.org"], ["Requiere IP argentina", "no"]], "compartida": false}, {"id": "f_bcra_bal", "label": "BCRA — balance histórico (balbcrhis.xls)", "corto": "BCRA · balance", "tipo": "fuente", "eje": "Banco Central", "nota": "Columnas POR POSICIÓN (15 adelantos, 20 letras, 24 activo, 37 base monetaria).", "fuera": false, "meta": [["Host", "bcra.gob.ar"], ["Requiere IP argentina", "sí — bloquea datacenter/exterior"]], "compartida": false}, {"id": "f_series", "label": "Series de Tiempo — recaudación", "corto": "Series de Tiempo", "tipo": "fuente", "eje": "Banco Central", "nota": "Serie 172.3_TL_RECAION_M_0_0_17. Excepción: responde desde fuera de Argentina.", "fuera": false, "meta": [["Host", "apis.datos.gob.ar"], ["Requiere IP argentina", "no"]], "compartida": false}, {"id": "f_pia_oa", "label": "PIA (MPF) + Oficina Anticorrupción", "corto": "PIA + OA", "tipo": "fuente", "eje": "Judicial", "nota": "Informes anuales en PDF. Exploratorio: no alimenta el índice.", "fuera": true, "meta": [["Host", "mpf.gob.ar · argentina.gob.ar"], ["Requiere IP argentina", "no"]], "compartida": false}, {"id": "f_panhis", "label": "BCRA — panorama monetario (panhis.xls)", "corto": "BCRA · panhis", "tipo": "fuente", "eje": "Banco Central", "nota": "Solo diagnóstico de estructura; no produce serie.", "fuera": true, "meta": [["Host", "bcra.gob.ar"], ["Requiere IP argentina", "sí — bloquea datacenter/exterior"]], "compartida": false}, {"id": "sc_infoleg", "label": "infoleg_source.py", "tipo": "script", "eje": "Infra", "nota": "Única copia (2026-08-19). Centraliza descarga robusta, parseo resiliente y fecha coalescida boletín→sanción.", "fuera": false, "meta": [["Archivo", "00_Comun/infoleg_source.py"], ["Rol", "librería compartida"]]}, {"id": "sc_01", "label": "scraper_01_dnu_leyes.py", "tipo": "script", "eje": "Ejecutivo", "nota": "DNU = tipo_norma 'Decreto' + clase_norma 'DNU'. La detección por texto quedó como validación cruzada (daba ~40 falsos positivos por citas en los considerandos).", "fuera": false, "meta": [["Archivo", "01_Poder_Ejecutivo/scraper_01_dnu_leyes.py"]]}, {"id": "sc_04", "label": "scraper_04_discrecionalidad.py", "tipo": "script", "eje": "Ejecutivo", "nota": "La magnitud en pesos de DGSIAF se descartó (ceros de prórroga, reorganización ministerial, valores negativos). Quedan el flag de régimen y el conteo por instrumento.", "fuera": false, "meta": [["Archivo", "01_Poder_Ejecutivo/scraper_04_discrecionalidad.py"]]}, {"id": "sc_11", "label": "scraper_11_transparencia_v2.py", "tipo": "script", "eje": "Ejecutivo", "nota": "Fechado por mes de RESOLUCIÓN (fecha_ultimo_pase de los terminales), no de inicio: da la tasa del mes sin esperar a que madure el cohorte.", "fuera": false, "meta": [["Archivo", "01_Poder_Ejecutivo/scraper_11_transparencia_v2.py"]]}, {"id": "sc_16", "label": "scraper_16_atn.py", "tipo": "script", "eje": "Ejecutivo", "nota": "El índice usa el share MENSUAL; el anual queda de referencia y de fallback para el núcleo viejo. Caché solo de años cerrados.", "fuera": false, "meta": [["Archivo", "01_Poder_Ejecutivo/scraper_16_atn.py"]]}, {"id": "sc_02", "label": "scraper_02_calidad_normativa.py", "tipo": "script", "eje": "Legislativo", "nota": "Leyes sancionadas de InfoLEG + simbólicas del buscador HCDN. El mes en curso nunca se cachea (su conteo es parcial).", "fuera": false, "meta": [["Archivo", "02_Poder_Legislativo/scraper_02_calidad_normativa.py"]]}, {"id": "sc_03", "label": "scraper_03_eficacia_control.py", "tipo": "script", "eje": "Legislativo", "nota": "Cumplimiento del art. 101 CN: concurrencias del JGM sobre el mínimo de 12 al año. Dedup por número de informe (partes, tomos y anexos).", "fuera": false, "meta": [["Archivo", "02_Poder_Legislativo/scraper_03_eficacia_control.py"]]}, {"id": "sc_12", "label": "scraper_12_costo_legislativo.py", "tipo": "script", "eje": "Legislativo", "nota": "Jurisdicción Poder Legislativo excluyendo AGN, Defensoría del Pueblo y CNPT (no son costo del Congreso).", "fuera": false, "meta": [["Archivo", "02_Poder_Legislativo/scraper_12_costo_legislativo.py"]]}, {"id": "sc_14", "label": "scraper_14_sesiones.py", "tipo": "script", "eje": "Legislativo", "nota": "Citadas vs realizadas (descarta 'no efectuada', 'fracasada', 'en minoría' y la Asamblea Legislativa).", "fuera": false, "meta": [["Archivo", "02_Poder_Legislativo/scraper_14_sesiones.py"]]}, {"id": "sc_05", "label": "scraper_05_cobertura_judicial.py", "tipo": "script", "eje": "Judicial", "nota": "Universo consistente: SOLO jueces. Stock del snapshot + estimado del padrón para el mes corriente + flujo con max(fecha dataset, fecha radar).", "fuera": false, "meta": [["Archivo", "03_Poder_Judicial/scraper_05_cobertura_judicial.py"]]}, {"id": "sc_06", "label": "scraper_06_resolucion_csjn.py", "tipo": "script", "eje": "Judicial", "nota": "Auto-parse del PDF validado contra cifras verificadas a mano; la composición de la Corte (vacantes) es tabla mantenida.", "fuera": false, "meta": [["Archivo", "03_Poder_Judicial/scraper_06_resolucion_csjn.py"]]}, {"id": "sc_padron", "label": "padron_judicial.py", "tipo": "script", "eje": "Judicial", "nota": "Padrón vivo: un cargo por fila. Aplica solo eventos ALTA/confirmados POSTERIORES al snapshot (si no, se contaría dos veces). Matching por tokens + número de juzgado releyendo el decreto.", "fuera": false, "meta": [["Archivo", "03_Poder_Judicial/padron_judicial.py"]]}, {"id": "sc_10", "label": "scraper_10_integridad.py", "tipo": "script", "eje": "Judicial", "nota": "«Control de la corrupción» se descartó por falta de dato duro y su 8% se redistribuyó en Corte + Cobertura. Queda como exploración.", "fuera": true, "meta": [["Archivo", "03_Poder_Judicial/scraper_10_integridad.py"]]}, {"id": "sc_07", "label": "scraper_07_escrutinio.py", "tipo": "script", "eje": "Prensa", "nota": "Conferencias de prensa (se expone a preguntas) sobre conferencias + cadenas nacionales (monólogo obligatorio).", "fuera": false, "meta": [["Archivo", "04_Prensa_Institucional/scraper_07_escrutinio.py"]]}, {"id": "sc_08", "label": "scraper_08_pauta.py", "tipo": "script", "eje": "Prensa", "nota": "Intensidad = devengado en publicidad / devengado total (share, invariante a la inflación). El HHI por medio era inviable: dataset congelado en 2022.", "fuera": false, "meta": [["Archivo", "04_Prensa_Institucional/scraper_08_pauta.py"]]}, {"id": "sc_13", "label": "scraper_13_prensa_causas.py", "tipo": "script", "eje": "Prensa", "nota": "Event-count de la categoría FOPEA «acciones judiciales civiles o penales», ventana móvil 12m (son ~20 casos al año).", "fuera": false, "meta": [["Archivo", "04_Prensa_Institucional/scraper_13_prensa_causas.py"]]}, {"id": "sc_20", "label": "scraper_20_medios_oficiales.py", "tipo": "script", "eje": "Prensa", "nota": "Tamaño del aparato de medios estatales (RTA, Radio Nacional, Télam, Contenidos Públicos) sobre el gasto total.", "fuera": false, "meta": [["Archivo", "04_Prensa_Institucional/scraper_20_medios_oficiales.py"]]}, {"id": "sc_22", "label": "scraper_22_acceso_prensa.py", "tipo": "script", "eje": "Prensa", "nota": "Combina el ESTADO del régimen de acceso (tabla datada) con el event-count de restricciones. El estado va en modo arrastre.", "fuera": false, "meta": [["Archivo", "04_Prensa_Institucional/scraper_22_acceso_prensa.py"]]}, {"id": "sc_18", "label": "scraper_18_bcra_balance.py", "tipo": "script", "eje": "Banco Central", "nota": "Una sola fuente alimenta las dos variables monetarias. Descarga siempre y refresca la caché (el bug de julio: quedaba congelado en abril).", "fuera": false, "meta": [["Archivo", "05_Banco_Central/scraper_18_bcra_balance.py"]]}, {"id": "sc_21", "label": "scraper_21_carta_organica.py", "tipo": "script", "eje": "Banco Central", "nota": "Tope del art. 20: 12% de la base + 10% de los recursos en efectivo 12m. Mide LEGALIDAD, no magnitud (esa la mide Financiamiento).", "fuera": false, "meta": [["Archivo", "05_Banco_Central/scraper_21_carta_organica.py"]]}, {"id": "sc_17", "label": "scraper_17_bcra_designacion.py", "tipo": "script", "eje": "Banco Central", "nota": "Sin scraping: tabla mantenida a mano. Los tramos previos a 2019 son scaffold y hay que confirmarlos con los pliegos del Senado.", "fuera": false, "meta": [["Archivo", "05_Banco_Central/scraper_17_bcra_designacion.py"]]}, {"id": "sc_radar_bcra", "label": "radar_bcra.py", "tipo": "script", "eje": "Banco Central", "nota": "Solo alerta. Distingue «con acuerdo del Senado» (única designación válida) de «en comisión». Evita Director/Vicepresidente y el boilerplate «Presidente de la Nación».", "fuera": false, "meta": [["Archivo", "05_Banco_Central/radar_bcra.py"], ["Rol", "radar (alerta)"]]}, {"id": "sc_radar_nom", "label": "radar_nombramientos.py", "tipo": "script", "eje": "Judicial", "nota": "Corre en GitHub Actions L–V 9:30 ART. Decide leyendo el CUERPO del decreto: el título del enlace no dice «juez». Falla avisando, nunca «sin novedades».", "fuera": false, "meta": [["Archivo", "07_Radar_Nombramientos/radar_nombramientos.py"], ["Rol", "radar (alerta)"]]}, {"id": "sc_panhis", "label": "diagnostico_panhis.py", "tipo": "script", "eje": "Banco Central", "nota": "Herramienta de diagnóstico, retirada del pipeline el 2026-08-19 (no produce serie).", "fuera": true, "meta": [["Archivo", "05_Banco_Central/diagnostico_panhis.py"]]}, {"id": "sc_ensamblado", "label": "icia_ensamblado.py", "tipo": "script", "eje": "Infra", "nota": "Anclaje al ideal, suavizado 12m, ffill de estados, arrastre asimétrico y renormalización por eje. Toma siempre el CSV más nuevo de cada patrón.", "fuera": false, "meta": [["Archivo", "00_Comun/icia_ensamblado.py"], ["Rol", "motor del índice"]]}, {"id": "sc_nucleo_m", "label": "mia_nucleo_mensual.py", "tipo": "script", "eje": "Infra", "nota": "Reutiliza la maquinaria del ensamblador con las 13 variables de serie larga (2020+). Desde 2026-08-19 lee el YAML, no una lista propia.", "fuera": false, "meta": [["Archivo", "06_Historico/mia_nucleo_mensual.py"], ["Rol", "núcleo"]]}, {"id": "sc_nucleo_h", "label": "mia_nucleo_historico.py", "tipo": "script", "eje": "Infra", "nota": "Misma escala pero a frecuencia ANUAL desde 2003, para comparar gestiones.", "fuera": false, "meta": [["Archivo", "06_Historico/mia_nucleo_historico.py"], ["Rol", "núcleo"]]}, {"id": "sc_validar", "label": "validar.py", "tipo": "script", "eje": "Infra", "nota": "Notifica, no bloquea (exit 2). Chequea presencia, columnas, no-vacío y frescura contra las tolerancias de contracts.yaml.", "fuera": false, "meta": [["Archivo", "00_Comun/validar.py"], ["Rol", "QA"]]}, {"id": "sc_archivar", "label": "archivar_historico.py", "tipo": "script", "eje": "Infra", "nota": "UPSERT con inmutabilidad: el mes cerrado queda congelado; reabrirlo es decisión humana explícita (--reabrir).", "fuera": false, "meta": [["Archivo", "00_Comun/archivar_historico.py"], ["Rol", "histórico"]]}, {"id": "sc_graficar", "label": "graficar_mia.py", "tipo": "script", "eje": "Infra", "nota": "Consolidado, 5 ejes y núcleo.", "fuera": false, "meta": [["Archivo", "00_Comun/graficar_mia.py"], ["Rol", "gráficos"]]}, {"id": "sc_reporte", "label": "generar_reporte_mensual.py", "tipo": "script", "eje": "Infra", "nota": "Arma el .docx sobre la plantilla LyP. Todo automático salvo «La lectura de Libertad y Progreso», la única sección a mano.", "fuera": false, "meta": [["Archivo", "00_Comun/generar_reporte_mensual.py"], ["Rol", "reporte"]]}, {"id": "sc_exportar", "label": "exportar_serie_historica.py", "tipo": "script", "eje": "Infra", "nota": "Excel único 2020→ con núcleo mensual/anual, pleno mensual, variables y notas.", "fuera": false, "meta": [["Archivo", "00_Comun/exportar_serie_historica.py"], ["Rol", "difusión"]]}, {"id": "d_infoleg_df", "label": "DataFrame InfoLEG", "tipo": "dato", "clase": "intermedio", "eje": "Infra", "nota": "Salida en memoria de la librería compartida; la consumen los módulos 1, 2 y 4.", "fuera": false, "meta": [["Tipo", "intermedio"]]}, {"id": "d_altas", "label": "nombramientos_jueces.csv", "tipo": "dato", "clase": "puente", "eje": "Judicial", "nota": "Puente del radar (altas). Append idempotente, dedup por URL. Solo confianza ALTA o confirmado='sí' entra al valor.", "fuera": false, "meta": [["Tipo", "puente"]]}, {"id": "d_bajas", "label": "bajas_jueces.csv", "tipo": "dato", "clase": "puente", "eje": "Judicial", "nota": "Puente del radar (bajas: renuncia, cese, remoción, jubilación, límite de edad, fallecimiento).", "fuera": false, "meta": [["Tipo", "puente"]]}, {"id": "d_bcra_eventos", "label": "bcra_presidencia_eventos.csv", "tipo": "dato", "clase": "puente", "eje": "Banco Central", "nota": "Alerta del radar del BCRA. Un humano confirma y recién entonces se edita la tabla de designación.", "fuera": false, "meta": [["Tipo", "puente"]]}, {"id": "d_padron_tasas", "label": "padron_tasas_estimadas.csv", "tipo": "dato", "clase": "puente", "eje": "Judicial", "nota": "Tasas recalculadas en vivo sobre cargos habilitados; marcan el mes corriente como «estimado».", "fuera": false, "meta": [["Tipo", "puente"]]}, {"id": "d_padron_revision", "label": "padron_revision.csv", "tipo": "dato", "clase": "salida", "eje": "Judicial", "nota": "Cola de revisión humana: eventos del BORA que no se pudieron mapear a un cargo.", "fuera": false, "meta": [["Tipo", "salida"]]}, {"id": "d_atn_obs", "label": "atn_obs_mensual.csv", "tipo": "dato", "clase": "puente", "eje": "Ejecutivo", "nota": "Observaciones mensuales inmutables: el mes cerrado y publicado no se recalcula.", "fuera": false, "meta": [["Tipo", "puente"]]}, {"id": "d_integridad", "label": "integridad_mensual.csv", "tipo": "dato", "clase": "salida", "eje": "Judicial", "nota": "No lo consume ninguna variable de variables.yaml.", "fuera": true, "meta": [["Tipo", "salida"]]}, {"id": "t_presupuesto", "label": "Tabla: presupuesto aprobado por año", "tipo": "dato", "clase": "tabla", "eje": "Ejecutivo", "nota": "PRESUPUESTO_APROBADO — verificado en el Boletín Oficial. 2023 ley, 2024 y 2025 prórroga, 2026 ley 27.798.", "fuera": false, "meta": [["Tipo", "tabla"]]}, {"id": "t_informes", "label": "Tabla: informes JGM no listados", "tipo": "dato", "clase": "tabla", "eje": "Legislativo", "nota": "INFORMES_EXTRA + CSV opcional: cubre el lag de la tabla del Senado.", "fuera": false, "meta": [["Tipo", "tabla"]]}, {"id": "t_csjn", "label": "Tabla: cifras CSJN verificadas", "tipo": "dato", "clase": "tabla", "eje": "Judicial", "nota": "Ingresados/resueltos, mediana, originaria y composición de la Corte; el auto-parse se valida contra esto.", "fuera": false, "meta": [["Tipo", "tabla"]]}, {"id": "t_acreditaciones", "label": "Tabla: régimen de acceso de la prensa", "tipo": "dato", "clase": "tabla", "eje": "Prensa", "nota": "ACREDITACIONES — tramos datados: cierre de la sala en abril 2026 y reapertura en mayo.", "fuera": false, "meta": [["Tipo", "tabla"]]}, {"id": "t_bcra_desig", "label": "Tabla: designación Pdte. BCRA", "tipo": "dato", "clase": "tabla", "eje": "Banco Central", "nota": "CONFIG por tramos. Bausili: en comisión por Decreto 19/2023, sin acuerdo del Senado.", "fuera": false, "meta": [["Tipo", "tabla"]]}, {"id": "cfg_variables", "label": "variables.yaml", "tipo": "dato", "clase": "config", "eje": "Infra", "nota": "FUENTE ÚNICA: 18 variables, ejes, pesos macro 30/20/20/15/15, anclas, modos y qué entra al núcleo (nucleo / nucleo_comp).", "fuera": false, "meta": [["Tipo", "config"]]}, {"id": "cfg_contracts", "label": "contracts.yaml", "tipo": "dato", "clase": "config", "eje": "Infra", "nota": "Solo umbrales de frescura del QA; la estructura de columnas se deriva de variables.yaml.", "fuera": false, "meta": [["Tipo", "config"]]}, {"id": "d_mia_mensual", "label": "mia_mensual.csv", "tipo": "dato", "clase": "salida", "eje": "Infra", "nota": "El índice publicado desde 2024-01 (se calcula desde 2023-01 como colchón del suavizado).", "fuera": false, "meta": [["Tipo", "salida"]]}, {"id": "d_historico", "label": "mia_historico.csv / .xlsx", "tipo": "dato", "clase": "salida", "eje": "Infra", "nota": "Histórico maestro con meses cerrados congelados y el mes en curso provisional.", "fuera": false, "meta": [["Tipo", "salida"]]}, {"id": "d_nucleo_mensual", "label": "mia_nucleo_mensual.csv", "tipo": "dato", "clase": "salida", "eje": "Infra", "nota": "Serie larga comparable 2020→. Sus niveles NO coinciden con el índice pleno.", "fuera": false, "meta": [["Tipo", "salida"]]}, {"id": "d_nucleo_anual", "label": "mia_nucleo_anual.csv", "tipo": "dato", "clase": "salida", "eje": "Infra", "nota": "Núcleo anual 2003→ para comparar gestiones.", "fuera": false, "meta": [["Tipo", "salida"]]}, {"id": "d_alertas", "label": "_alertas_validacion.md", "tipo": "dato", "clase": "salida", "eje": "Infra", "nota": "Reporte de QA que lee el equipo antes de publicar.", "fuera": false, "meta": [["Tipo", "salida"]]}, {"id": "d_graficos", "label": "Gráficos (PNG)", "tipo": "dato", "clase": "salida", "eje": "Infra", "nota": "Consolidado, 5 ejes y núcleo; entran al reporte.", "fuera": false, "meta": [["Tipo", "salida"]]}, {"id": "d_reporte", "label": "Reporte mensual (.docx)", "tipo": "dato", "clase": "salida", "eje": "Infra", "nota": "Diseño LyP. Único bloque manual: la lectura institucional.", "fuera": false, "meta": [["Tipo", "salida"]]}, {"id": "d_excel", "label": "Excel serie histórica 2020→", "tipo": "dato", "clase": "salida", "eje": "Infra", "nota": "Para consulta y difusión.", "fuera": false, "meta": [["Tipo", "salida"]]}, {"id": "acceso_prensa_mensual", "label": "acceso_prensa_mensual", "tipo": "dato", "clase": "serie", "eje": "Prensa", "nota": null, "meta": [["Archivo", "output/acceso_prensa_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 3"]], "frescura": 0, "tolerancia": 3}, {"id": "atn_mensual", "label": "atn_mensual", "tipo": "dato", "clase": "serie", "eje": "Ejecutivo", "nota": null, "meta": [["Archivo", "output/atn_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 14"]], "frescura": 0, "tolerancia": 14}, {"id": "bcra_designacion_mensual", "label": "bcra_designacion_mensual", "tipo": "dato", "clase": "serie", "eje": "Banco Central", "nota": null, "meta": [["Archivo", "output/bcra_designacion_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 3"]], "frescura": 0, "tolerancia": 3}, {"id": "bcra_financiamiento_mensual", "label": "bcra_financiamiento_mensual", "tipo": "dato", "clase": "serie", "eje": "Banco Central", "nota": null, "meta": [["Archivo", "output/bcra_financiamiento_mensual_<timestamp>.csv"], ["Frescura (QA)", "1 mes(es) de atraso · tolerancia 3"]], "frescura": 1, "tolerancia": 3}, {"id": "bcra_letras_mensual", "label": "bcra_letras_mensual", "tipo": "dato", "clase": "serie", "eje": "Banco Central", "nota": null, "meta": [["Archivo", "output/bcra_letras_mensual_<timestamp>.csv"], ["Frescura (QA)", "1 mes(es) de atraso · tolerancia 3"]], "frescura": 1, "tolerancia": 3}, {"id": "calidad_normativa_mensual", "label": "calidad_normativa_mensual", "tipo": "dato", "clase": "serie", "eje": "Infra", "nota": null, "meta": [["Archivo", "output/calidad_normativa_mensual_<timestamp>.csv"]], "frescura": null, "tolerancia": null}, {"id": "carta_organica_mensual", "label": "carta_organica_mensual", "tipo": "dato", "clase": "serie", "eje": "Banco Central", "nota": null, "meta": [["Archivo", "output/carta_organica_mensual_<timestamp>.csv"], ["Frescura (QA)", "1 mes(es) de atraso · tolerancia 3"]], "frescura": 1, "tolerancia": 3}, {"id": "cobertura_judicial_mensual", "label": "cobertura_judicial_mensual", "tipo": "dato", "clase": "serie", "eje": "Judicial", "nota": null, "meta": [["Archivo", "output/cobertura_judicial_mensual_<timestamp>.csv"], ["Frescura (QA)", "2 mes(es) de atraso · tolerancia 14"]], "frescura": 2, "tolerancia": 14}, {"id": "costo_legislativo_mensual", "label": "costo_legislativo_mensual", "tipo": "dato", "clase": "serie", "eje": "Legislativo", "nota": null, "meta": [["Archivo", "output/costo_legislativo_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 14"]], "frescura": 0, "tolerancia": 14}, {"id": "discrecionalidad_mensual", "label": "discrecionalidad_mensual", "tipo": "dato", "clase": "serie", "eje": "Ejecutivo", "nota": null, "meta": [["Archivo", "output/discrecionalidad_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 3"]], "frescura": 0, "tolerancia": 3}, {"id": "dnu_leyes_mensual", "label": "dnu_leyes_mensual", "tipo": "dato", "clase": "serie", "eje": "Ejecutivo", "nota": null, "meta": [["Archivo", "output/dnu_leyes_mensual_<timestamp>.csv"], ["Frescura (QA)", "1 mes(es) de atraso · tolerancia 3"]], "frescura": 1, "tolerancia": 3}, {"id": "eficacia_control_mensual", "label": "eficacia_control_mensual", "tipo": "dato", "clase": "serie", "eje": "Legislativo", "nota": null, "meta": [["Archivo", "output/eficacia_control_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 3"]], "frescura": 0, "tolerancia": 3}, {"id": "escrutinio_mensual", "label": "escrutinio_mensual", "tipo": "dato", "clase": "serie", "eje": "Prensa", "nota": null, "meta": [["Archivo", "output/escrutinio_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 3"]], "frescura": 0, "tolerancia": 3}, {"id": "medios_oficiales_mensual", "label": "medios_oficiales_mensual", "tipo": "dato", "clase": "serie", "eje": "Prensa", "nota": null, "meta": [["Archivo", "output/medios_oficiales_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 14"]], "frescura": 0, "tolerancia": 14}, {"id": "pauta_mensual", "label": "pauta_mensual", "tipo": "dato", "clase": "serie", "eje": "Prensa", "nota": null, "meta": [["Archivo", "output/pauta_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 14"]], "frescura": 0, "tolerancia": 14}, {"id": "prensa_causas_mensual", "label": "prensa_causas_mensual", "tipo": "dato", "clase": "serie", "eje": "Prensa", "nota": null, "meta": [["Archivo", "output/prensa_causas_mensual_<timestamp>.csv"], ["Frescura (QA)", "0 mes(es) de atraso · tolerancia 3"]], "frescura": 0, "tolerancia": 3}, {"id": "resolucion_csjn_mensual", "label": "resolucion_csjn_mensual", "tipo": "dato", "clase": "serie", "eje": "Judicial", "nota": null, "meta": [["Archivo", "output/resolucion_csjn_mensual_<timestamp>.csv"], ["Frescura (QA)", "8 mes(es) de atraso · tolerancia 14"]], "frescura": 8, "tolerancia": 14}, {"id": "sesiones_mensual", "label": "sesiones_mensual", "tipo": "dato", "clase": "serie", "eje": "Legislativo", "nota": null, "meta": [["Archivo", "output/sesiones_mensual_<timestamp>.csv"], ["Frescura (QA)", "1 mes(es) de atraso · tolerancia 3"]], "frescura": 1, "tolerancia": 3}, {"id": "transparencia_v2_mensual", "label": "transparencia_v2_mensual", "tipo": "dato", "clase": "serie", "eje": "Ejecutivo", "nota": null, "meta": [["Archivo", "output/transparencia_v2_mensual_<timestamp>.csv"], ["Frescura (QA)", "1 mes(es) de atraso · tolerancia 3"]], "frescura": 1, "tolerancia": 3}, {"id": "MIA", "label": "MIA", "tipo": "indice", "eje": "Indice", "score": 54.5151080258649, "delta": -0.9769740256283796, "nota": "Índice mensual de calidad republicana 0–100, anclado a un ideal absoluto. Promedio ponderado de los 5 ejes con pesos macro fijos.", "meta": [["Mes", "agosto de 2026"], ["Estado", "provisional"], ["Escala", "0 = colapso institucional · 100 = ideal republicano"], ["Suavizado", "media móvil de 12 meses"], ["Publicado desde", "2024-01 (calculado desde 2023-01 como colchón)"]]}, {"id": "eje_Ejecutivo", "label": "Ejecutivo", "tipo": "eje", "eje": "Ejecutivo", "score": 50.80625411713648, "delta": -0.9859366592248051, "nota": "Sub-índice del eje Ejecutivo. Se renormaliza sobre las variables disponibles, así que una variable ausente no altera el peso macro del poder.", "meta": [["Peso macro", "30%"], ["Variables", "4"]]}, {"id": "eje_Legislativo", "label": "Legislativo", "tipo": "eje", "eje": "Legislativo", "score": 46.67377851678921, "delta": -3.0289648836012546, "nota": "Sub-índice del eje Legislativo. Se renormaliza sobre las variables disponibles, así que una variable ausente no altera el peso macro del poder.", "meta": [["Peso macro", "20%"], ["Variables", "3"]]}, {"id": "eje_Judicial", "label": "Judicial", "tipo": "eje", "eje": "Judicial", "score": 44.94500366300366, "delta": -0.10966666666666924, "nota": "Sub-índice del eje Judicial. Se renormaliza sobre las variables disponibles, así que una variable ausente no altera el peso macro del poder.", "meta": [["Peso macro", "20%"], ["Variables", "2"]]}, {"id": "eje_Prensa", "label": "Prensa", "tipo": "eje", "eje": "Prensa", "score": 71.51421739130434, "delta": -0.17793840579710718, "nota": "Sub-índice del eje Prensa. Se renormaliza sobre las variables disponibles, así que una variable ausente no altera el peso macro del poder.", "meta": [["Peso macro", "15%"], ["Variables", "5"]]}, {"id": "eje_Banco Central", "label": "Banco Central", "tipo": "eje", "eje": "Banco Central", "score": 68.1489516404648, "delta": -0.178506379585329, "nota": "Sub-índice del eje Banco Central. Se renormaliza sobre las variables disponibles, así que una variable ausente no altera el peso macro del poder.", "meta": [["Peso macro", "15%"], ["Variables", "4"]]}, {"id": "var_dnu_vs_leyes", "label": "DNU vs Leyes", "tipo": "variable", "eje": "Ejecutivo", "score": 0.5, "delta": -2.9, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Ejecutivo"], ["Peso en el índice", "12%"], ["Modo", "suavizado"], ["Componente", "dnu_leyes_mensual → cuota_dnu_12m · ancla 0.05→100 / 0.7→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "sí"]]}, {"id": "var_discrecionalidad_presup", "label": "Discrecionalidad presup.", "tipo": "variable", "eje": "Ejecutivo", "score": 77.6, "delta": 0.0, "nucleo": false, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Ejecutivo"], ["Peso en el índice", "13%"], ["Modo", "sin_suavizar, suavizado"], ["Componente 1", "discrecionalidad_mensual → presupuesto_aprobado · ancla 1→100 / 0→0 · peso intra 0.6 · sin_suavizar"], ["Componente 2", "discrecionalidad_mensual → modif_12m · ancla 5→100 / 12→0 · peso intra 0.4 · suavizado"], ["En el Núcleo", "no"]]}, {"id": "var_transparencia_aip", "label": "Transparencia (AIP)", "tipo": "variable", "eje": "Ejecutivo", "score": 65.2, "delta": -0.5999999999999943, "nucleo": false, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Ejecutivo"], ["Peso en el índice", "5%"], ["Modo", "suavizado"], ["Componente 1", "transparencia_v2_mensual → tasa_respuesta · ancla 0.95→100 / 0.3→0 · peso intra 0.4 · suavizado"], ["Componente 2", "transparencia_v2_mensual → tasa_en_plazo · ancla 0.9→100 / 0.2→0 · peso intra 0.6 · suavizado"], ["En el Núcleo", "no"]]}, {"id": "var_atn_federalismo", "label": "ATN (federalismo)", "tipo": "variable", "eje": "Ejecutivo", "score": 81.3, "delta": 0.3999999999999915, "nucleo": true, "nucleo_propio": true, "nota": null, "meta": [["Eje", "Ejecutivo"], ["Peso en el índice", "6%"], ["Modo", "suavizado"], ["Componente", "atn_mensual → atn_share_mensual · ancla 0.001→100 / 0.007→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "sí (con componentes propios: nucleo_comp)"]]}, {"id": "var_eficacia_de_control", "label": "Eficacia de Control", "tipo": "variable", "eje": "Legislativo", "score": 20.9, "delta": -4.300000000000001, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Legislativo"], ["Peso en el índice", "12%"], ["Modo", "suavizado"], ["Componente", "eficacia_control_mensual → cumplimiento_art101_12m · ancla 0.75→100 / 0.1→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "sí"]]}, {"id": "var_calidad_normativa", "label": "Calidad Normativa", "tipo": "variable", "eje": "Legislativo", "score": 69.5, "delta": 0.5999999999999943, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Legislativo"], ["Peso en el índice", "10%"], ["Modo", "suavizado"], ["Componente 1", "__derived__ → leyes_por_sesion · ancla 1.5→100 / 0.2→0 · peso intra 0.6 · suavizado"], ["Componente 2", "sesiones_mensual → cumplimiento_sesiones · ancla 0.95→100 / 0.4→0 · peso intra 0.4 · suavizado"], ["En el Núcleo", "sí"]]}, {"id": "der_leyes_por_sesion", "label": "leyes_por_sesion", "tipo": "dato", "clase": "derivada", "eje": "Legislativo", "nota": "Serie derivada: se calcula en el ensamblador combinando dos fuentes (leyes sancionadas de InfoLEG ÷ sesiones realizadas de HCDN, ventana 12m).", "meta": [["Definición", "leyes_12m / sesiones_realizadas_12m, con ffill"]]}, {"id": "var_costo_del_legislativo", "label": "Costo del Legislativo", "tipo": "variable", "eje": "Legislativo", "score": 73.5, "delta": -10.099999999999994, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Legislativo"], ["Peso en el índice", "3%"], ["Modo", "suavizado"], ["Componente", "costo_legislativo_mensual → costo_legislativo · ancla 0.003→100 / 0.012→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "sí"]]}, {"id": "var_desempe_o_de_la_corte", "label": "Desempeño de la Corte", "tipo": "variable", "eje": "Judicial", "score": 30.0, "delta": 0.0, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Judicial"], ["Peso en el índice", "15%"], ["Modo", "suavizado"], ["Componente 1", "resolucion_csjn_mensual → tasa_resolucion · ancla 0.95→100 / 0.3→0 · peso intra 0.35 · suavizado"], ["Componente 2", "resolucion_csjn_mensual → mediana_dias · ancla 120→100 / 730→0 · peso intra 0.25 · suavizado"], ["Componente 3", "resolucion_csjn_mensual → originaria_dias · ancla 365→100 / 1825→0 · peso intra 0.2 · suavizado"], ["Componente 4", "resolucion_csjn_mensual → csjn_vacantes · ancla 0→100 / 3→0 · peso intra 0.2 · suavizado"], ["En el Núcleo", "sí"]]}, {"id": "var_cobertura_judicial", "label": "Cobertura Judicial", "tipo": "variable", "eje": "Judicial", "score": 67.4, "delta": -0.29999999999999716, "nucleo": true, "nucleo_propio": true, "nota": null, "meta": [["Eje", "Judicial"], ["Peso en el índice", "10%"], ["Modo", "sin_suavizar, suavizado"], ["Componente 1", "cobertura_judicial_mensual → tasa_titular · ancla 0.9→100 / 0.55→0 · peso intra 0.45 · suavizado"], ["Componente 2", "cobertura_judicial_mensual → tasa_sin_cobertura · ancla 0.0→100 / 0.2→0 · peso intra 0.25 · suavizado"], ["Componente 3", "cobertura_judicial_mensual → meses_sin_nombramiento · ancla 6→100 / 24→0 · peso intra 0.3 · sin_suavizar"], ["En el Núcleo", "sí (con componentes propios: nucleo_comp)"]]}, {"id": "var_escrutinio_abierto", "label": "Escrutinio Abierto", "tipo": "variable", "eje": "Prensa", "score": 100.0, "delta": 0.0, "nucleo": false, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Prensa"], ["Peso en el índice", "6%"], ["Modo", "suavizado"], ["Componente", "escrutinio_mensual → escrutinio_12m · ancla 0.85→100 / 0.3→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "no"]]}, {"id": "var_pauta_publicitaria", "label": "Pauta Publicitaria", "tipo": "variable", "eje": "Prensa", "score": 99.9, "delta": 0.0, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Prensa"], ["Peso en el índice", "5%"], ["Modo", "suavizado"], ["Componente", "pauta_mensual → intensidad_pauta · ancla 0.0→100 / 0.004→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "sí"]]}, {"id": "var_causas_contra_periodistas", "label": "Causas contra periodistas", "tipo": "variable", "eje": "Prensa", "score": 0.0, "delta": 0.0, "nucleo": false, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Prensa"], ["Peso en el índice", "4%"], ["Modo", "suavizado"], ["Componente", "prensa_causas_mensual → causas_jud_12m · ancla 0→100 / 20→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "no"]]}, {"id": "var_medios_estatales", "label": "Medios estatales", "tipo": "variable", "eje": "Prensa", "score": 71.8, "delta": 0.0, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Prensa"], ["Peso en el índice", "4%"], ["Modo", "suavizado"], ["Componente", "medios_oficiales_mensual → medios_share · ancla 0.0→100 / 0.0015→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "sí"]]}, {"id": "var_acceso_de_la_prensa", "label": "Acceso de la prensa", "tipo": "variable", "eje": "Prensa", "score": 64.5, "delta": -1.0, "nucleo": false, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Prensa"], ["Peso en el índice", "4%"], ["Modo", "arrastre, suavizado"], ["Componente 1", "acceso_prensa_mensual → acceso_estructural · ancla 1.0→100 / 0.0→0 · peso intra 0.5 · arrastre"], ["Componente 2", "acceso_prensa_mensual → restricciones_12m · ancla 0→100 / 40→0 · peso intra 0.5 · suavizado"], ["En el Núcleo", "no"], ["Arrastre", "caída inmediata, recuperación en 3 meses"]]}, {"id": "var_financiamiento_al_tesoro", "label": "Financiamiento al Tesoro", "tipo": "variable", "eje": "Banco Central", "score": 87.0, "delta": -0.09999999999999432, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Banco Central"], ["Peso en el índice", "6%"], ["Modo", "suavizado"], ["Componente", "bcra_financiamiento_mensual → financiamiento · ancla 0.02→100 / 0.4→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "sí"]]}, {"id": "var_letras_intransferibles", "label": "Letras intransferibles", "tipo": "variable", "eje": "Banco Central", "score": 68.2, "delta": -0.5999999999999943, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Banco Central"], ["Peso en el índice", "5%"], ["Modo", "suavizado"], ["Componente", "bcra_letras_mensual → letras_share · ancla 0.0→100 / 0.7→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "sí"]]}, {"id": "var_designaci_n_pdte_bcra", "label": "Designación Pdte. BCRA", "tipo": "variable", "eje": "Banco Central", "score": 0.0, "delta": 0.0, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Banco Central"], ["Peso en el índice", "4%"], ["Modo", "sin_suavizar"], ["Componente", "bcra_designacion_mensual → designacion_acuerdo · ancla 1→100 / 0→0 · peso intra 1.0 · sin_suavizar"], ["En el Núcleo", "sí"]]}, {"id": "var_respeto_carta_org_nica", "label": "Respeto Carta Orgánica", "tipo": "variable", "eje": "Banco Central", "score": 100.0, "delta": 0.0, "nucleo": true, "nucleo_propio": false, "nota": null, "meta": [["Eje", "Banco Central"], ["Peso en el índice", "5%"], ["Modo", "suavizado"], ["Componente", "carta_organica_mensual → carta_organica_exceso · ancla 0.0→100 / 0.5→0 · peso intra 1.0 · suavizado"], ["En el Núcleo", "sí"]]}], "links": [{"source": "f_infoleg", "target": "sc_infoleg", "kind": "flujo"}, {"source": "sc_infoleg", "target": "d_infoleg_df", "kind": "flujo"}, {"source": "d_infoleg_df", "target": "sc_01", "kind": "flujo"}, {"source": "sc_01", "target": "dnu_leyes_mensual", "kind": "flujo"}, {"source": "f_opc", "target": "sc_04", "kind": "flujo"}, {"source": "d_infoleg_df", "target": "sc_04", "kind": "flujo"}, {"source": "t_presupuesto", "target": "sc_04", "kind": "config"}, {"source": "sc_04", "target": "discrecionalidad_mensual", "kind": "flujo"}, {"source": "f_aaip", "target": "sc_11", "kind": "flujo"}, {"source": "sc_11", "target": "transparencia_v2_mensual", "kind": "flujo"}, {"source": "f_dgsiaf", "target": "sc_16", "kind": "flujo"}, {"source": "sc_16", "target": "atn_mensual", "kind": "flujo"}, {"source": "sc_16", "target": "d_atn_obs", "kind": "flujo"}, {"source": "f_hcdn_proy", "target": "sc_02", "kind": "flujo"}, {"source": "d_infoleg_df", "target": "sc_02", "kind": "flujo"}, {"source": "sc_02", "target": "calidad_normativa_mensual", "kind": "flujo"}, {"source": "f_senado", "target": "sc_03", "kind": "flujo"}, {"source": "t_informes", "target": "sc_03", "kind": "config"}, {"source": "sc_03", "target": "eficacia_control_mensual", "kind": "flujo"}, {"source": "f_dgsiaf", "target": "sc_12", "kind": "flujo"}, {"source": "sc_12", "target": "costo_legislativo_mensual", "kind": "flujo"}, {"source": "f_hcdn_ses", "target": "sc_14", "kind": "flujo"}, {"source": "sc_14", "target": "sesiones_mensual", "kind": "flujo"}, {"source": "f_magistrados", "target": "sc_05", "kind": "flujo"}, {"source": "d_altas", "target": "sc_05", "kind": "flujo"}, {"source": "d_padron_tasas", "target": "sc_05", "kind": "flujo"}, {"source": "sc_05", "target": "cobertura_judicial_mensual", "kind": "flujo"}, {"source": "f_csjn", "target": "sc_06", "kind": "flujo"}, {"source": "t_csjn", "target": "sc_06", "kind": "config"}, {"source": "sc_06", "target": "resolucion_csjn_mensual", "kind": "flujo"}, {"source": "f_magistrados", "target": "sc_padron", "kind": "flujo"}, {"source": "d_altas", "target": "sc_padron", "kind": "flujo"}, {"source": "d_bajas", "target": "sc_padron", "kind": "flujo"}, {"source": "sc_padron", "target": "d_padron_tasas", "kind": "flujo"}, {"source": "sc_padron", "target": "d_padron_revision", "kind": "flujo"}, {"source": "f_pia_oa", "target": "sc_10", "kind": "flujo"}, {"source": "sc_10", "target": "d_integridad", "kind": "flujo"}, {"source": "f_casarosada", "target": "sc_07", "kind": "flujo"}, {"source": "sc_07", "target": "escrutinio_mensual", "kind": "flujo"}, {"source": "f_dgsiaf", "target": "sc_08", "kind": "flujo"}, {"source": "sc_08", "target": "pauta_mensual", "kind": "flujo"}, {"source": "f_fopea", "target": "sc_13", "kind": "flujo"}, {"source": "sc_13", "target": "prensa_causas_mensual", "kind": "flujo"}, {"source": "f_dgsiaf", "target": "sc_20", "kind": "flujo"}, {"source": "sc_20", "target": "medios_oficiales_mensual", "kind": "flujo"}, {"source": "f_fopea", "target": "sc_22", "kind": "flujo"}, {"source": "t_acreditaciones", "target": "sc_22", "kind": "config"}, {"source": "sc_22", "target": "acceso_prensa_mensual", "kind": "flujo"}, {"source": "f_bcra_bal", "target": "sc_18", "kind": "flujo"}, {"source": "sc_18", "target": "bcra_financiamiento_mensual", "kind": "flujo"}, {"source": "sc_18", "target": "bcra_letras_mensual", "kind": "flujo"}, {"source": "f_series", "target": "sc_21", "kind": "flujo"}, {"source": "bcra_financiamiento_mensual", "target": "sc_21", "kind": "flujo"}, {"source": "sc_21", "target": "carta_organica_mensual", "kind": "flujo"}, {"source": "t_bcra_desig", "target": "sc_17", "kind": "config"}, {"source": "sc_17", "target": "bcra_designacion_mensual", "kind": "flujo"}, {"source": "f_bora", "target": "sc_radar_bcra", "kind": "flujo"}, {"source": "sc_radar_bcra", "target": "d_bcra_eventos", "kind": "alerta"}, {"source": "f_bora", "target": "sc_radar_nom", "kind": "flujo"}, {"source": "sc_radar_nom", "target": "d_altas", "kind": "alerta"}, {"source": "sc_radar_nom", "target": "d_bajas", "kind": "alerta"}, {"source": "f_panhis", "target": "sc_panhis", "kind": "flujo"}, {"source": "cfg_variables", "target": "sc_ensamblado", "kind": "config"}, {"source": "sc_ensamblado", "target": "d_mia_mensual", "kind": "flujo"}, {"source": "cfg_variables", "target": "sc_nucleo_m", "kind": "config"}, {"source": "sc_nucleo_m", "target": "d_nucleo_mensual", "kind": "flujo"}, {"source": "cfg_variables", "target": "sc_nucleo_h", "kind": "config"}, {"source": "sc_nucleo_h", "target": "d_nucleo_anual", "kind": "flujo"}, {"source": "cfg_variables", "target": "sc_validar", "kind": "config"}, {"source": "cfg_contracts", "target": "sc_validar", "kind": "config"}, {"source": "sc_validar", "target": "d_alertas", "kind": "flujo"}, {"source": "d_mia_mensual", "target": "sc_archivar", "kind": "flujo"}, {"source": "sc_archivar", "target": "d_historico", "kind": "flujo"}, {"source": "d_mia_mensual", "target": "sc_graficar", "kind": "flujo"}, {"source": "sc_graficar", "target": "d_graficos", "kind": "flujo"}, {"source": "d_mia_mensual", "target": "sc_reporte", "kind": "flujo"}, {"source": "d_historico", "target": "sc_reporte", "kind": "flujo"}, {"source": "d_nucleo_mensual", "target": "sc_reporte", "kind": "flujo"}, {"source": "cfg_variables", "target": "sc_reporte", "kind": "config"}, {"source": "sc_reporte", "target": "d_reporte", "kind": "flujo"}, {"source": "d_nucleo_mensual", "target": "sc_exportar", "kind": "flujo"}, {"source": "d_nucleo_anual", "target": "sc_exportar", "kind": "flujo"}, {"source": "d_historico", "target": "sc_exportar", "kind": "flujo"}, {"source": "sc_exportar", "target": "d_excel", "kind": "flujo"}, {"source": "eje_Ejecutivo", "target": "MIA", "kind": "flujo", "w": 0.3, "label": "peso macro 30%"}, {"source": "eje_Legislativo", "target": "MIA", "kind": "flujo", "w": 0.2, "label": "peso macro 20%"}, {"source": "eje_Judicial", "target": "MIA", "kind": "flujo", "w": 0.2, "label": "peso macro 20%"}, {"source": "eje_Prensa", "target": "MIA", "kind": "flujo", "w": 0.15, "label": "peso macro 15%"}, {"source": "eje_Banco Central", "target": "MIA", "kind": "flujo", "w": 0.15, "label": "peso macro 15%"}, {"source": "var_dnu_vs_leyes", "target": "eje_Ejecutivo", "kind": "flujo", "w": 0.12, "label": "peso 12%"}, {"source": "dnu_leyes_mensual", "target": "var_dnu_vs_leyes", "kind": "flujo", "w": 1.0, "label": "cuota_dnu_12m · peso intra 1.0 · 0.05→100 / 0.7→0"}, {"source": "var_discrecionalidad_presup", "target": "eje_Ejecutivo", "kind": "flujo", "w": 0.13, "label": "peso 13%"}, {"source": "discrecionalidad_mensual", "target": "var_discrecionalidad_presup", "kind": "flujo", "w": 0.6, "label": "presupuesto_aprobado · peso intra 0.6 · 1→100 / 0→0"}, {"source": "discrecionalidad_mensual", "target": "var_discrecionalidad_presup", "kind": "flujo", "w": 0.4, "label": "modif_12m · peso intra 0.4 · 5→100 / 12→0"}, {"source": "var_transparencia_aip", "target": "eje_Ejecutivo", "kind": "flujo", "w": 0.05, "label": "peso 5%"}, {"source": "transparencia_v2_mensual", "target": "var_transparencia_aip", "kind": "flujo", "w": 0.4, "label": "tasa_respuesta · peso intra 0.4 · 0.95→100 / 0.3→0"}, {"source": "transparencia_v2_mensual", "target": "var_transparencia_aip", "kind": "flujo", "w": 0.6, "label": "tasa_en_plazo · peso intra 0.6 · 0.9→100 / 0.2→0"}, {"source": "var_atn_federalismo", "target": "eje_Ejecutivo", "kind": "flujo", "w": 0.06, "label": "peso 6%"}, {"source": "atn_mensual", "target": "var_atn_federalismo", "kind": "flujo", "w": 1.0, "label": "atn_share_mensual · peso intra 1.0 · 0.001→100 / 0.007→0"}, {"source": "var_eficacia_de_control", "target": "eje_Legislativo", "kind": "flujo", "w": 0.12, "label": "peso 12%"}, {"source": "eficacia_control_mensual", "target": "var_eficacia_de_control", "kind": "flujo", "w": 1.0, "label": "cumplimiento_art101_12m · peso intra 1.0 · 0.75→100 / 0.1→0"}, {"source": "var_calidad_normativa", "target": "eje_Legislativo", "kind": "flujo", "w": 0.1, "label": "peso 10%"}, {"source": "calidad_normativa_mensual", "target": "der_leyes_por_sesion", "kind": "flujo", "label": "n_leyes_sancionadas"}, {"source": "sesiones_mensual", "target": "der_leyes_por_sesion", "kind": "flujo", "label": "real_12m"}, {"source": "der_leyes_por_sesion", "target": "var_calidad_normativa", "kind": "flujo", "w": 0.6, "label": "leyes_por_sesion · peso intra 0.6 · 1.5→100 / 0.2→0"}, {"source": "sesiones_mensual", "target": "var_calidad_normativa", "kind": "flujo", "w": 0.4, "label": "cumplimiento_sesiones · peso intra 0.4 · 0.95→100 / 0.4→0"}, {"source": "var_costo_del_legislativo", "target": "eje_Legislativo", "kind": "flujo", "w": 0.03, "label": "peso 3%"}, {"source": "costo_legislativo_mensual", "target": "var_costo_del_legislativo", "kind": "flujo", "w": 1.0, "label": "costo_legislativo · peso intra 1.0 · 0.003→100 / 0.012→0"}, {"source": "var_desempe_o_de_la_corte", "target": "eje_Judicial", "kind": "flujo", "w": 0.15, "label": "peso 15%"}, {"source": "resolucion_csjn_mensual", "target": "var_desempe_o_de_la_corte", "kind": "flujo", "w": 0.35, "label": "tasa_resolucion · peso intra 0.35 · 0.95→100 / 0.3→0"}, {"source": "resolucion_csjn_mensual", "target": "var_desempe_o_de_la_corte", "kind": "flujo", "w": 0.25, "label": "mediana_dias · peso intra 0.25 · 120→100 / 730→0"}, {"source": "resolucion_csjn_mensual", "target": "var_desempe_o_de_la_corte", "kind": "flujo", "w": 0.2, "label": "originaria_dias · peso intra 0.2 · 365→100 / 1825→0"}, {"source": "resolucion_csjn_mensual", "target": "var_desempe_o_de_la_corte", "kind": "flujo", "w": 0.2, "label": "csjn_vacantes · peso intra 0.2 · 0→100 / 3→0"}, {"source": "var_cobertura_judicial", "target": "eje_Judicial", "kind": "flujo", "w": 0.1, "label": "peso 10%"}, {"source": "cobertura_judicial_mensual", "target": "var_cobertura_judicial", "kind": "flujo", "w": 0.45, "label": "tasa_titular · peso intra 0.45 · 0.9→100 / 0.55→0"}, {"source": "cobertura_judicial_mensual", "target": "var_cobertura_judicial", "kind": "flujo", "w": 0.25, "label": "tasa_sin_cobertura · peso intra 0.25 · 0.0→100 / 0.2→0"}, {"source": "cobertura_judicial_mensual", "target": "var_cobertura_judicial", "kind": "flujo", "w": 0.3, "label": "meses_sin_nombramiento · peso intra 0.3 · 6→100 / 24→0"}, {"source": "var_escrutinio_abierto", "target": "eje_Prensa", "kind": "flujo", "w": 0.06, "label": "peso 6%"}, {"source": "escrutinio_mensual", "target": "var_escrutinio_abierto", "kind": "flujo", "w": 1.0, "label": "escrutinio_12m · peso intra 1.0 · 0.85→100 / 0.3→0"}, {"source": "var_pauta_publicitaria", "target": "eje_Prensa", "kind": "flujo", "w": 0.05, "label": "peso 5%"}, {"source": "pauta_mensual", "target": "var_pauta_publicitaria", "kind": "flujo", "w": 1.0, "label": "intensidad_pauta · peso intra 1.0 · 0.0→100 / 0.004→0"}, {"source": "var_causas_contra_periodistas", "target": "eje_Prensa", "kind": "flujo", "w": 0.04, "label": "peso 4%"}, {"source": "prensa_causas_mensual", "target": "var_causas_contra_periodistas", "kind": "flujo", "w": 1.0, "label": "causas_jud_12m · peso intra 1.0 · 0→100 / 20→0"}, {"source": "var_medios_estatales", "target": "eje_Prensa", "kind": "flujo", "w": 0.04, "label": "peso 4%"}, {"source": "medios_oficiales_mensual", "target": "var_medios_estatales", "kind": "flujo", "w": 1.0, "label": "medios_share · peso intra 1.0 · 0.0→100 / 0.0015→0"}, {"source": "var_acceso_de_la_prensa", "target": "eje_Prensa", "kind": "flujo", "w": 0.04, "label": "peso 4%"}, {"source": "acceso_prensa_mensual", "target": "var_acceso_de_la_prensa", "kind": "flujo", "w": 0.5, "label": "acceso_estructural · peso intra 0.5 · 1.0→100 / 0.0→0"}, {"source": "acceso_prensa_mensual", "target": "var_acceso_de_la_prensa", "kind": "flujo", "w": 0.5, "label": "restricciones_12m · peso intra 0.5 · 0→100 / 40→0"}, {"source": "var_financiamiento_al_tesoro", "target": "eje_Banco Central", "kind": "flujo", "w": 0.06, "label": "peso 6%"}, {"source": "bcra_financiamiento_mensual", "target": "var_financiamiento_al_tesoro", "kind": "flujo", "w": 1.0, "label": "financiamiento · peso intra 1.0 · 0.02→100 / 0.4→0"}, {"source": "var_letras_intransferibles", "target": "eje_Banco Central", "kind": "flujo", "w": 0.05, "label": "peso 5%"}, {"source": "bcra_letras_mensual", "target": "var_letras_intransferibles", "kind": "flujo", "w": 1.0, "label": "letras_share · peso intra 1.0 · 0.0→100 / 0.7→0"}, {"source": "var_designaci_n_pdte_bcra", "target": "eje_Banco Central", "kind": "flujo", "w": 0.04, "label": "peso 4%"}, {"source": "bcra_designacion_mensual", "target": "var_designaci_n_pdte_bcra", "kind": "flujo", "w": 1.0, "label": "designacion_acuerdo · peso intra 1.0 · 1→100 / 0→0"}, {"source": "var_respeto_carta_org_nica", "target": "eje_Banco Central", "kind": "flujo", "w": 0.05, "label": "peso 5%"}, {"source": "carta_organica_mensual", "target": "var_respeto_carta_org_nica", "kind": "flujo", "w": 1.0, "label": "carta_organica_exceso · peso intra 1.0 · 0.0→100 / 0.5→0"}, {"source": "sc_ensamblado", "target": "MIA", "kind": "calcula", "nota": "Aplica anclaje, suavizado, ffill de estados, arrastre y renormalización."}, {"source": "MIA", "target": "d_mia_mensual", "kind": "flujo", "label": "se materializa en el CSV publicado"}, {"source": "d_bcra_eventos", "target": "t_bcra_desig", "kind": "alerta", "nota": "El radar avisa; un humano confirma y edita la tabla. La IA/regex nunca toca el valor."}], "meta": {"mes": "2026-08", "mes_label": "agosto de 2026", "estado": "provisional", "mes_previo": "2026-07", "mes_previo_label": "julio de 2026", "generado": "2026-08-19 16:49", "n_variables": 18, "n_nucleo": 13, "macro": {"Ejecutivo": 0.3, "Legislativo": 0.2, "Judicial": 0.2, "Prensa": 0.15, "Banco Central": 0.15}, "ejes": ["Ejecutivo", "Legislativo", "Judicial", "Prensa", "Banco Central"]}};
+const { nodes: NODOS, links: ARISTAS, meta: META } = DATOS;
+
+/* ───────────────── utilidades ───────────────── */
+const $ = s => document.querySelector(s);
+const fmt = (v, d = 1) => (v == null || Number.isNaN(v)) ? "s/d"
+  : Number(v).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const signo = v => (v == null || Number.isNaN(v)) ? "" : (v >= 0 ? "+" : "−") + fmt(Math.abs(v));
+const SVGNS = "http://www.w3.org/2000/svg";
+const el = (t, a = {}) => { const n = document.createElementNS(SVGNS, t);
+  for (const k in a) n.setAttribute(k, a[k]); return n; };
+const txt = (s) => document.createTextNode(s == null ? "" : String(s));
+const ROL = { fuente: "Fuente oficial", script: "Script", dato: "Dato", variable: "Variable",
+              eje: "Eje", indice: "Índice" };
+const CLASE = { serie: "serie mensual", puente: "puente (CSV del radar)", tabla: "tabla mantenida a mano",
+                config: "configuración", salida: "salida", derivada: "serie derivada", intermedio: "dato en memoria" };
+const SEQ = ["--seq-1","--seq-2","--seq-3","--seq-4","--seq-5","--seq-6","--seq-7"];
+
+/* ───────────────── modelo en memoria ───────────────── */
+const byId = new Map();
+NODOS.forEach(n => { byId.set(n.id, n); n.x = 0; n.y = 0; n.vx = 0; n.vy = 0; });
+const R = n => n.tipo === "indice" ? 34 : n.tipo === "eje" ? 24 : n.tipo === "variable" ? 13
+  : n.tipo === "fuente" ? 8 : n.tipo === "script" ? 9 : (n.clase === "serie" ? 8 : 7);
+NODOS.forEach(n => n.r = R(n));
+const salida = new Map(), entrada = new Map();
+ARISTAS.forEach(l => {
+  l.s = byId.get(l.source); l.t = byId.get(l.target);
+  (salida.get(l.source) || salida.set(l.source, []).get(l.source)).push(l);
+  (entrada.get(l.target) || entrada.set(l.target, []).get(l.target)).push(l);
+});
+const vecinos = id => [...(salida.get(id) || []), ...(entrada.get(id) || [])];
+
+/* cierre transitivo hacia arriba / abajo (para resaltar el camino completo) */
+function alcanzables(id, dir) {
+  const vistos = new Set([id]), pila = [id], mapa = dir === "arriba" ? entrada : salida;
+  while (pila.length) {
+    for (const l of (mapa.get(pila.pop()) || [])) {
+      const o = dir === "arriba" ? l.source : l.target;
+      if (!vistos.has(o)) { vistos.add(o); pila.push(o); }
+    }
+  }
+  return vistos;
+}
+const CAMINO = new Map();
+const camino = id => {
+  if (!CAMINO.has(id)) {
+    const s = new Set([...alcanzables(id, "arriba"), ...alcanzables(id, "abajo")]);
+    CAMINO.set(id, s);
+  }
+  return CAMINO.get(id);
+};
+
+/* ───────────────── layout: fuerzas ───────────────── */
+const ANCLAS = { "Indice": [0, 0], "Ejecutivo": [-0.5, -0.87], "Legislativo": [0.5, -0.87],
+                 "Judicial": [1, 0], "Prensa": [0.5, 0.87], "Banco Central": [-0.5, 0.87],
+                 "Infra": [-1, 0] };
+const LARGO = l => {
+  if (l.t.tipo === "indice") return 155;
+  if (l.t.tipo === "eje") return 120;
+  if (l.t.tipo === "variable") return 104;
+  if (l.s.tipo === "fuente") return 78;
+  return 68;
+};
+let W = 1200, H = 700, alpha = 1;
+function anclar() {
+  const cx = W / 2, cy = H / 2, rad = Math.min(W, H) * 0.33;
+  NODOS.forEach(n => {
+    const a = ANCLAS[n.eje] || ANCLAS.Infra;
+    n.ax = cx + a[0] * rad * 1.62;
+    n.ay = cy + a[1] * rad * 1.16;
+    n.lado = a[0] < -0.2 ? -1 : 1;        // rotular hacia afuera del centro
+  });
+}
+function sembrar() {
+  anclar();
+  NODOS.forEach((n, i) => {
+    const g = i * 2.39996;                       // ángulo de oro: siembra sin simetrías
+    n.x = n.ax + Math.cos(g) * (14 + (i % 9) * 7);
+    n.y = n.ay + Math.sin(g) * (14 + (i % 7) * 7);
+    n.vx = n.vy = 0; n.fijo = false;
+  });
+  alpha = 1;
+}
+function tick() {
+  const vis = NODOS.filter(n => !n.oculto);
+  for (let i = 0; i < vis.length; i++) {
+    const a = vis[i];
+    for (let j = i + 1; j < vis.length; j++) {
+      const b = vis[j];
+      let dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+      if (d2 > 160000) continue;
+      if (d2 < 4) { dx = (Math.random() - .5); dy = (Math.random() - .5); d2 = 4; }
+      const f = (3500 * alpha) / d2, d = Math.sqrt(d2), ux = dx / d, uy = dy / d;
+      a.vx -= ux * f; a.vy -= uy * f; b.vx += ux * f; b.vy += uy * f;
+    }
+  }
+  for (const l of ARISTAS) {
+    if (l.s.oculto || l.t.oculto) continue;
+    const dx = l.t.x - l.s.x, dy = l.t.y - l.s.y, d = Math.hypot(dx, dy) || 1;
+    const f = (d - LARGO(l)) * 0.055 * alpha, ux = dx / d * f, uy = dy / d * f;
+    l.s.vx += ux; l.s.vy += uy; l.t.vx -= ux; l.t.vy -= uy;
+  }
+  for (const n of vis) {
+    const ka = n.tipo === "indice" ? 0.16 : 0.030;   // el MIA se queda en el centro
+    n.vx += (n.ax - n.x) * ka * alpha;
+    n.vy += (n.ay - n.y) * ka * alpha;
+    if (n.fijo) { n.vx = n.vy = 0; continue; }
+    n.x += n.vx; n.y += n.vy; n.vx *= 0.86; n.vy *= 0.86;
+  }
+  for (let it = 0; it < 2; it++) {                    // colisión: 2px de aire entre marcas
+    for (let i = 0; i < vis.length; i++) for (let j = i + 1; j < vis.length; j++) {
+      const a = vis[i], b = vis[j], min = a.r + b.r + (a.tipo === 'indice' || b.tipo === 'indice' ? 34 : 12);
+      let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+      if (d < min && d > 0.01) {
+        const c = (min - d) / d * 0.5, mx = dx * c, my = dy * c;
+        if (!a.fijo) { a.x -= mx; a.y -= my; }
+        if (!b.fijo) { b.x += mx; b.y += my; }
+      }
+    }
+  }
+  // las etiquetas de las variables son anchas: si dos quedan a la misma altura, se separan
+  const rot = vis.filter(n => n.tipo === "variable" || n.tipo === "eje");
+  for (let it = 0; it < 2; it++)
+    for (let i = 0; i < rot.length; i++) for (let j = i + 1; j < rot.length; j++) {
+      const a = rot[i], b = rot[j];
+      if (a.lado !== b.lado) continue;
+      const dx = Math.abs(b.x - a.x), dy = b.y - a.y;
+      if (dx > 150 || Math.abs(dy) > 31) continue;
+      const s = dy === 0 ? (i % 2 ? 1 : -1) : Math.sign(dy);
+      const emp = (31 - Math.abs(dy)) * 0.5 * s;
+      if (!a.fijo) a.y -= emp;
+      if (!b.fijo) b.y += emp;
+    }
+  alpha *= 0.985;
+}
+
+/* ───────────────── dibujo ───────────────── */
+const svg = $("#svg"), gZoom = $("#zoom"), gL = $("#capa-links"), gN = $("#capa-nodos");
+let modoColor = "rol", modoEtiq = "claves", seleccion = null;
+
+function forma(n) {
+  const r = n.r;
+  if (n.tipo === "fuente") return el("rect", { class: "forma", x: -r, y: -r, width: r * 2, height: r * 2, rx: 3 });
+  if (n.tipo === "script") {
+    const p = []; for (let i = 0; i < 6; i++) { const a = Math.PI / 3 * i - Math.PI / 2;
+      p.push((Math.cos(a) * r).toFixed(1) + "," + (Math.sin(a) * r).toFixed(1)); }
+    return el("polygon", { class: "forma", points: p.join(" ") });
+  }
+  if (n.tipo === "dato") return el("polygon", { class: "forma", points: `0,${-r} ${r},0 0,${r} ${-r},0` });
+  return el("circle", { class: "forma", r });
+}
+function arcoPath(r, frac) {
+  const f = Math.max(0, Math.min(1, frac));
+  const a = -Math.PI / 2, b = a + Math.PI * 2 * f;
+  const x0 = Math.cos(a) * r, y0 = Math.sin(a) * r;
+  if (f >= 0.999) return `M ${x0} ${y0} A ${r} ${r} 0 1 1 ${-x0} ${-y0} A ${r} ${r} 0 1 1 ${x0} ${y0}`;
+  return `M ${x0} ${y0} A ${r} ${r} 0 ${(b - a) > Math.PI ? 1 : 0} 1 ${Math.cos(b) * r} ${Math.sin(b) * r}`;
+}
+function pintar(g, n) {
+  const f = g.querySelector(".forma");
+  const conScore = n.score != null && !Number.isNaN(n.score);
+  if (modoColor === "score" && conScore) {
+    const i = Math.max(0, Math.min(6, Math.floor(n.score / 100 * 7)));
+    f.setAttribute("fill", `var(${SEQ[i]})`);
+    f.setAttribute("stroke", "var(--hairline)");
+    // el número de eje/MIA va DENTRO de la marca (invierte con el paso de la rampa);
+    // el de las variables va afuera, sobre la superficie: se queda en tinta siempre.
+    const adentro = n.tipo === "eje" || n.tipo === "indice";
+    g.querySelectorAll(".valor").forEach(t => t.style.fill = (adentro && i >= 4) ? "var(--surface-1)" : "var(--ink)");
+  } else if (n.tipo === "variable") {
+    f.setAttribute("fill", "var(--surface-1)"); f.setAttribute("stroke", "var(--ink)");
+    g.querySelectorAll(".valor").forEach(t => t.style.fill = "var(--ink)");
+  } else if (n.tipo === "eje" || n.tipo === "indice") {
+    f.setAttribute("fill", "var(--ink)"); f.setAttribute("stroke", "var(--ink)");
+    g.querySelectorAll(".valor").forEach(t => t.style.fill = "var(--surface-1)");
+  } else {
+    const c = n.tipo === "fuente" ? "var(--rol-fuente)" : n.tipo === "script" ? "var(--rol-script)" : "var(--rol-dato)";
+    f.setAttribute("fill", modoColor === "score" ? "var(--grid)" : c);
+    f.setAttribute("stroke", modoColor === "score" ? "var(--axis)" : c);
+  }
+}
+
+const gNodos = new Map(), pathLinks = new Map(), rotEjes = new Map();
+function rotularEjes() {
+  const cap = document.getElementById("capa-ejes"); cap.textContent = "";
+  for (const [eje, a] of Object.entries(ANCLAS)) {
+    if (eje === "Indice") continue;
+    const t = el("text", { class: "rot-eje", "font-size": eje === "Infra" ? 20 : 26 });
+    t.appendChild(txt(eje === "Infra" ? "Transversal" : eje));
+    cap.appendChild(t); rotEjes.set(eje, t);
+  }
+}
+function posicionarRotulos() {
+  // el rótulo del eje se corre hacia AFUERA del cluster (en la dirección de su ancla),
+  // así nunca se apoya sobre un nodo ni sobre otra etiqueta.
+  for (const [eje, t] of rotEjes) {
+    const ns = NODOS.filter(n => n.eje === eje && !n.oculto);
+    if (!ns.length) { t.style.display = "none"; continue; }
+    t.style.display = "";
+    const cx = ns.reduce((s, n) => s + n.x, 0) / ns.length;
+    const cy = ns.reduce((s, n) => s + n.y, 0) / ns.length;
+    const radio = Math.max(...ns.map(n => Math.hypot(n.x - cx, n.y - cy)));
+    const a = ANCLAS[eje] || ANCLAS.Infra;
+    const norma = Math.hypot(a[0], a[1]) || 1;
+    t.setAttribute("x", (cx + a[0] / norma * (radio + 30)).toFixed(0));
+    t.setAttribute("y", (cy + a[1] / norma * (radio + 30) + 9).toFixed(0));
+  }
+}
+function construir() {
+  for (const l of ARISTAS) {
+    const w = l.w != null ? 1.3 + Math.min(1, l.w) * 3.6 : (l.kind === "config" ? 1.1 : 1.4);
+    const p = el("path", { class: "link " + l.kind, "stroke-width": w.toFixed(2) });
+    if (l.s.fuera || l.t.fuera) p.style.opacity = ".45";
+    gL.appendChild(p); pathLinks.set(l, p);
+  }
+  for (const n of NODOS) {
+    const g = el("g", { class: "nodo" + (n.fuera ? " fuera" : ""), tabindex: "0", role: "button" });
+    g.appendChild(el("circle", { class: "halo", r: n.r + 7 }));
+    g.appendChild(forma(n));
+    const conScore = n.score != null && !Number.isNaN(n.score);
+    if (conScore) {
+      const ra = n.r + 5, sw = n.tipo === "indice" ? 5 : n.tipo === "eje" ? 4 : 3;
+      g.appendChild(el("path", { class: "arco-track", d: arcoPath(ra, 1), "stroke-width": sw }));
+      g.appendChild(el("path", { class: "arco", d: arcoPath(ra, n.score / 100), "stroke-width": sw }));
+    }
+    if (n.tipo === "eje" || n.tipo === "indice") {
+      const t = el("text", { class: "valor", "text-anchor": "middle", y: n.tipo === "indice" ? 6 : 5,
+                             "font-size": n.tipo === "indice" ? 19 : 14 });
+      t.appendChild(txt(fmt(n.score))); g.appendChild(t);
+      if (n.tipo === "indice") {
+        const s = el("text", { class: "valor", "text-anchor": "middle", y: -9, "font-size": 11 });
+        s.appendChild(txt("MIA")); g.appendChild(s);
+      } else {
+        const lb = el("text", { class: "rot fuerte", "text-anchor": "middle", y: n.r + 17 });
+        lb.appendChild(txt(n.label)); g.appendChild(lb);
+      }
+    } else {
+      const lado = n.lado || 1, lx = lado * (n.r + 7);
+      const ancla = lado > 0 ? "start" : "end";
+      const lb = el("text", { class: "rot" + (n.tipo === "variable" || n.tipo === "fuente" ? " fuerte" : ""),
+                              x: lx, y: n.tipo === "variable" ? -1 : 3.5, "text-anchor": ancla });
+      lb.appendChild(txt(n.corto || n.label)); g.appendChild(lb);
+      if (conScore) {
+        const v = el("text", { class: "valor", x: lx, y: 13.5, "text-anchor": ancla });
+        v.appendChild(txt(fmt(n.score) + (n.nucleo ? "  ·  núcleo" : "")));
+        g.appendChild(v);
+      }
+    }
+    pintar(g, n);
+    gN.appendChild(g); gNodos.set(n.id, g);
+    g.addEventListener("pointerenter", () => resaltar(n.id, true));
+    g.addEventListener("pointerleave", () => { if (!seleccion) resaltar(null); });
+    g.addEventListener("focus", () => { resaltar(n.id, true); mostrarTip(n, null); });
+    g.addEventListener("blur", () => { if (!seleccion) resaltar(null); ocultarTip(); });
+    g.addEventListener("pointermove", e => mostrarTip(n, e));
+    g.addEventListener("click", e => { e.stopPropagation(); seleccion = n.id; resaltar(n.id, true); panel(n); });
+    g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault();
+      seleccion = n.id; resaltar(n.id, true); panel(n); } });
+    g.addEventListener("dblclick", () => { n.fijo = false; alpha = Math.max(alpha, .3); animar(); });
+    arrastrable(g, n);
+  }
+}
+function posicionar() {
+  for (const [l, p] of pathLinks) {
+    const { s, t } = l;
+    if (s.oculto || t.oculto) { p.style.display = "none"; continue; }
+    p.style.display = "";
+    const dx = t.x - s.x, dy = t.y - s.y, d = Math.hypot(dx, dy) || 1;
+    const ux = dx / d, uy = dy / d;
+    const x1 = s.x + ux * (s.r + 2), y1 = s.y + uy * (s.r + 2);
+    const x2 = t.x - ux * (t.r + 3), y2 = t.y - uy * (t.r + 3);
+    const mx = (x1 + x2) / 2 - uy * d * 0.055, my = (y1 + y2) / 2 + ux * d * 0.055;
+    p.setAttribute("d", `M ${x1.toFixed(1)} ${y1.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${x2.toFixed(1)} ${y2.toFixed(1)}`);
+  }
+  for (const n of NODOS) {
+    const g = gNodos.get(n.id);
+    g.setAttribute("transform", `translate(${n.x.toFixed(1)},${n.y.toFixed(1)})`);
+    g.style.display = n.oculto ? "none" : "";
+  }
+  posicionarRotulos();
+}
+function resaltar(id, conCamino) {
+  if (!id) {
+    gN.querySelectorAll(".nodo").forEach(g => g.classList.remove("apagado", "activo"));
+    gL.querySelectorAll(".link").forEach(p => p.classList.remove("apagado", "activo"));
+    etiquetas(); return;
+  }
+  const set = conCamino ? camino(id) : new Set([id, ...vecinos(id).map(l => l.source === id ? l.target : l.source)]);
+  for (const n of NODOS) {
+    const g = gNodos.get(n.id);
+    g.classList.toggle("apagado", !set.has(n.id));
+    g.classList.toggle("activo", n.id === id);
+    g.querySelectorAll(".rot,.valor").forEach(t => t.style.display = set.has(n.id) ? "" : "none");
+  }
+  for (const [l, p] of pathLinks) {
+    const dentro = set.has(l.source) && set.has(l.target);
+    p.classList.toggle("apagado", !dentro);
+    p.classList.toggle("activo", dentro);
+  }
+}
+function etiquetas() {
+  for (const n of NODOS) {
+    const clave = n.tipo === "variable" || n.tipo === "eje" || n.tipo === "indice";
+    const ver = modoEtiq === "todas" || clave;
+    gNodos.get(n.id).querySelectorAll(".rot,.valor").forEach(t => t.style.display = ver ? "" : "none");
+  }
+}
+
+/* ───────────────── tooltip y panel ───────────────── */
+const tip = $("#tip");
+function mostrarTip(n, e) {
+  tip.textContent = "";
+  const t = document.createElement("div"); t.className = "t"; t.appendChild(txt(n.label)); tip.appendChild(t);
+  if (n.score != null && !Number.isNaN(n.score)) {
+    const v = document.createElement("div"); v.className = "n";
+    v.appendChild(txt(fmt(n.score) + " / 100")); tip.appendChild(v);
+    if (n.delta != null) {
+      const d = document.createElement("div"); d.className = "m";
+      d.appendChild(txt((n.delta >= 0 ? "▲ " : "▼ ") + signo(n.delta) + " vs " + META.mes_previo_label));
+      tip.appendChild(d);
+    }
+  }
+  const m = document.createElement("div"); m.className = "m";
+  m.appendChild(txt(ROL[n.tipo] + (n.clase ? " · " + (CLASE[n.clase] || n.clase) : "") +
+                    (n.eje && n.eje !== "Infra" && n.eje !== "Indice" ? " · " + n.eje : "")));
+  tip.appendChild(m);
+  const h = document.createElement("div"); h.className = "m"; h.style.marginTop = "3px";
+  h.appendChild(txt("clic para ver el detalle y el camino completo"));
+  tip.appendChild(h);
+  const x = e ? e.clientX : svg.getBoundingClientRect().left + 40;
+  const y = e ? e.clientY : svg.getBoundingClientRect().top + 40;
+  tip.style.opacity = "1";
+  const r = tip.getBoundingClientRect();
+  tip.style.left = Math.min(x + 14, innerWidth - r.width - 10) + "px";
+  tip.style.top = Math.min(y + 14, innerHeight - r.height - 10) + "px";
+}
+const ocultarTip = () => tip.style.opacity = "0";
+svg.addEventListener("pointerleave", ocultarTip);
+
+function panel(n) {
+  const p = $("#panel"); p.textContent = "";
+  const rol = document.createElement("div"); rol.className = "rolete";
+  rol.appendChild(txt(ROL[n.tipo] + (n.clase ? " · " + (CLASE[n.clase] || n.clase) : "") + (n.fuera ? " · fuera del pipeline" : "")));
+  p.appendChild(rol);
+  const h = document.createElement("h2"); h.appendChild(txt(n.label)); p.appendChild(h);
+  if (n.score != null && !Number.isNaN(n.score)) {
+    const v = document.createElement("div"); v.style.fontSize = "27px"; v.style.fontWeight = "650";
+    v.appendChild(txt(fmt(n.score))); p.appendChild(v);
+    const d = document.createElement("div"); d.className = "nota"; d.style.margin = "0 0 6px";
+    if (n.delta != null) {
+      const s = document.createElement("span"); s.className = n.delta >= 0 ? "up" : "down";
+      s.appendChild(txt((n.delta >= 0 ? "▲ " : "▼ ") + signo(n.delta)));
+      d.appendChild(s); d.appendChild(txt(" vs " + META.mes_previo_label + " · escala 0–100"));
+    } else d.appendChild(txt("escala 0–100"));
+    p.appendChild(d);
+  }
+  if (n.nota) { const nt = document.createElement("div"); nt.className = "nota"; nt.appendChild(txt(n.nota)); p.appendChild(nt); }
+  if (n.meta && n.meta.length) {
+    const dl = document.createElement("dl");
+    for (const [k, v] of n.meta) {
+      const dt = document.createElement("dt"); dt.appendChild(txt(k));
+      const dd = document.createElement("dd"); dd.appendChild(txt(v));
+      dl.appendChild(dt); dl.appendChild(dd);
+    }
+    p.appendChild(dl);
+  }
+  const lista = (titulo, arr, dir) => {
+    const t = document.createElement("h3"); t.appendChild(txt(titulo)); p.appendChild(t);
+    if (!arr.length) { const v = document.createElement("div"); v.className = "vacio";
+      v.appendChild(txt("—")); p.appendChild(v); return; }
+    const ul = document.createElement("ul");
+    const grupos = new Map();               // un renglón por vecino, aunque entre por 2 componentes
+    for (const l of arr) {
+      const oid = dir === "in" ? l.source : l.target;
+      if (!grupos.has(oid)) grupos.set(oid, []);
+      grupos.get(oid).push([l.label, l.kind === "alerta" ? "alerta / insumo" : null,
+                            l.kind === "calcula" ? "lo calcula" : null,
+                            l.kind === "config" ? "configuración" : null].filter(Boolean).join(" · "));
+    }
+    for (const [oid, extras] of grupos) {
+      const otro = byId.get(oid);
+      const li = document.createElement("li");
+      const b = document.createElement("button");
+      b.appendChild(txt(otro.label));
+      b.addEventListener("click", () => { seleccion = otro.id; resaltar(otro.id, true); panel(otro); centrar(otro); });
+      li.appendChild(b);
+      for (const e of extras.filter(Boolean)) {
+        const s = document.createElement("div"); s.className = "peso"; s.appendChild(txt(e)); li.appendChild(s);
+      }
+      ul.appendChild(li);
+    }
+    p.appendChild(ul);
+  };
+  lista("Lo alimenta", entrada.get(n.id) || [], "in");
+  lista("Alimenta a", salida.get(n.id) || [], "out");
+  const c = camino(n.id);
+  const pie = document.createElement("div"); pie.className = "nota"; pie.style.marginTop = "14px";
+  pie.appendChild(txt(`Su cadena completa toca ${c.size - 1} nodo(s), resaltados en el grafo.`));
+  p.appendChild(pie);
+}
+function panelVacio() {
+  const p = $("#panel"); p.textContent = "";
+  const h = document.createElement("h2"); h.appendChild(txt("Cómo leer el mapa")); p.appendChild(h);
+  const pasos = [
+    ["El dato entra por la izquierda.", "Cada fuente oficial (cuadrado) alimenta uno o más scripts (hexágono), que publican una serie mensual (rombo)."],
+    ["Las 18 variables normalizan.", "Cada serie se ancla a un ideal absoluto (mejor→100, peor→0). El anillo alrededor de la variable muestra qué tan cerca del ideal está este mes."],
+    ["Los pesos suben por el grafo.", "El grosor de la arista es el peso: peso_intra dentro de la variable, peso de la variable en su eje, y peso macro del eje en el MIA."],
+    ["Las líneas de guiones no son el valor.", "Los radares del BORA son alertas: avisan, pero un humano confirma antes de que algo entre al índice."],
+  ];
+  for (const [t, d] of pasos) {
+    const h3 = document.createElement("h3"); h3.appendChild(txt(t)); p.appendChild(h3);
+    const nt = document.createElement("div"); nt.className = "nota"; nt.style.margin = "0";
+    nt.appendChild(txt(d)); p.appendChild(nt);
+  }
+  const fin = document.createElement("div"); fin.className = "nota"; fin.style.marginTop = "16px";
+  fin.appendChild(txt("Clic en cualquier nodo para ver su ficha, su cadena completa y sus vecinos. Arrastralo para fijarlo; doble clic lo suelta."));
+  p.appendChild(fin);
+}
+function centrar(n) {
+  const b = svg.getBoundingClientRect();
+  tx = b.width / 2 - n.x * k; ty = b.height / 2 - n.y * k; aplicarZoom();
+}
+
+/* ───────────────── zoom, pan, arrastre ───────────────── */
+let k = 1, tx = 0, ty = 0;
+const aplicarZoom = () => gZoom.setAttribute("transform", `translate(${tx.toFixed(1)},${ty.toFixed(1)}) scale(${k.toFixed(3)})`);
+const aPantalla = e => { const b = svg.getBoundingClientRect();
+  return [(e.clientX - b.left - tx) / k, (e.clientY - b.top - ty) / k]; };
+svg.addEventListener("wheel", e => {
+  e.preventDefault();
+  const b = svg.getBoundingClientRect(), mx = e.clientX - b.left, my = e.clientY - b.top;
+  const nk = Math.max(0.25, Math.min(3.2, k * (e.deltaY < 0 ? 1.11 : 0.9)));
+  tx = mx - (mx - tx) * (nk / k); ty = my - (my - ty) * (nk / k); k = nk; aplicarZoom();
+}, { passive: false });
+let paneando = null;
+svg.addEventListener("pointerdown", e => {
+  if (e.target.closest(".nodo")) return;
+  paneando = { x: e.clientX, y: e.clientY, tx, ty }; svg.setPointerCapture(e.pointerId);
+});
+svg.addEventListener("pointermove", e => {
+  if (!paneando) return;
+  tx = paneando.tx + (e.clientX - paneando.x); ty = paneando.ty + (e.clientY - paneando.y); aplicarZoom();
+});
+svg.addEventListener("pointerup", e => { paneando = null; try { svg.releasePointerCapture(e.pointerId); } catch (_) {} });
+svg.addEventListener("click", e => {
+  if (e.target.closest(".nodo")) return;
+  seleccion = null; resaltar(null); panelVacio();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") { seleccion = null; resaltar(null); panelVacio(); ocultarTip(); } });
+
+function arrastrable(g, n) {
+  let activo = false;
+  g.addEventListener("pointerdown", e => {
+    e.stopPropagation(); activo = true; n.fijo = true; g.setPointerCapture(e.pointerId);
+    alpha = Math.max(alpha, 0.28); animar();
+  });
+  g.addEventListener("pointermove", e => {
+    if (!activo) return;
+    const [x, y] = aPantalla(e); n.x = x; n.y = y; posicionar();
+  });
+  g.addEventListener("pointerup", e => { activo = false; try { g.releasePointerCapture(e.pointerId); } catch (_) {} });
+}
+function ajustar() {
+  const vis = NODOS.filter(n => !n.oculto);
+  if (!vis.length) return;
+  const xs = vis.map(n => n.x), ys = vis.map(n => n.y);
+  const x0 = Math.min(...xs) - 90, x1 = Math.max(...xs) + 130;
+  const y0 = Math.min(...ys) - 60, y1 = Math.max(...ys) + 70;
+  const b = svg.getBoundingClientRect();
+  k = Math.max(0.25, Math.min(2.2, Math.min(b.width / (x1 - x0), b.height / (y1 - y0))));
+  tx = (b.width - (x1 - x0) * k) / 2 - x0 * k;
+  ty = (b.height - (y1 - y0) * k) / 2 - y0 * k;
+  aplicarZoom();
+}
+
+/* ───────────────── animación ───────────────── */
+const quieto = matchMedia("(prefers-reduced-motion: reduce)").matches;
+let corriendo = false;
+function animar() {
+  if (corriendo) return;
+  corriendo = true;
+  const paso = () => {
+    for (let i = 0; i < (quieto ? 40 : 2); i++) tick();
+    posicionar();
+    if (alpha > 0.006) requestAnimationFrame(paso); else corriendo = false;
+  };
+  if (quieto) { while (alpha > 0.006) tick(); posicionar(); corriendo = false; }
+  else requestAnimationFrame(paso);
+}
+
+/* ───────────────── filtros ───────────────── */
+const EJES_UI = ["Ejecutivo", "Legislativo", "Judicial", "Prensa", "Banco Central", "Infra"];
+const ROLES_UI = [["fuente", "Fuentes"], ["script", "Scripts"], ["dato", "Datos"], ["variable", "Variables"], ["eje", "Ejes"]];
+const estado = { ejes: new Set(EJES_UI.concat("Indice")), roles: new Set(["fuente", "script", "dato", "variable", "eje", "indice"]), vista: "todo", q: "" };
+
+function ancestros(id) { return alcanzables(id, "arriba"); }
+function preset(v) {
+  if (v === "todo") return null;
+  if (v === "valor") return ancestros("MIA");
+  if (v === "nucleo") {
+    const s = new Set(["cfg_variables", "sc_nucleo_m", "sc_nucleo_h", "d_nucleo_mensual", "d_nucleo_anual"]);
+    NODOS.filter(n => n.nucleo).forEach(n => ancestros(n.id).forEach(x => s.add(x)));
+    return s;
+  }
+  if (v === "satelites") {
+    const s = new Set();
+    NODOS.filter(n => (n.clase === "puente" || n.clase === "tabla" || /radar|padron/.test(n.id)))
+      .forEach(n => { s.add(n.id); vecinos(n.id).forEach(l => { s.add(l.source); s.add(l.target); }); });
+    return s;
+  }
+  if (v === "afuera") {
+    const s = new Set();
+    NODOS.filter(n => n.fuera).forEach(n => { s.add(n.id); vecinos(n.id).forEach(l => { s.add(l.source); s.add(l.target); }); });
+    return s;
+  }
+  return null;
+}
+function aplicar() {
+  const p = preset(estado.vista);
+  const q = estado.q.trim().toLowerCase();
+  for (const n of NODOS) {
+    const porEje = estado.ejes.has(n.eje);
+    const porRol = estado.roles.has(n.tipo);
+    n.oculto = !(porEje && porRol && (!p || p.has(n.id)));
+  }
+  posicionar();
+  if (q) {
+    const hit = new Set(NODOS.filter(n => !n.oculto &&
+      (n.label.toLowerCase().includes(q) || (n.meta || []).some(([, v]) => String(v).toLowerCase().includes(q)) ||
+       (n.nota || "").toLowerCase().includes(q))).map(n => n.id));
+    for (const n of NODOS) gNodos.get(n.id).classList.toggle("apagado", !hit.has(n.id));
+    for (const [l, pt] of pathLinks) pt.classList.toggle("apagado", !(hit.has(l.source) && hit.has(l.target)));
+  } else if (seleccion) resaltar(seleccion, true);
+  else resaltar(null);
+  alpha = Math.max(alpha, 0.22); animar();
+}
+
+/* ───────────────── UI: chips, tiles, tabla, tema ───────────────── */
+function chips() {
+  const ce = $("#chips-eje"), cr = $("#chips-rol");
+  for (const e of EJES_UI) {
+    const b = document.createElement("button");
+    b.className = "chip"; b.setAttribute("aria-pressed", "true");
+    b.appendChild(txt(e === "Infra" ? "Transversal" : e));
+    b.addEventListener("click", () => {
+      const on = b.getAttribute("aria-pressed") === "true";
+      b.setAttribute("aria-pressed", String(!on));
+      if (on) { estado.ejes.delete(e); if (e === "Infra") estado.ejes.delete("Indice"); }
+      else { estado.ejes.add(e); if (e === "Infra") estado.ejes.add("Indice"); }
+      aplicar();
+    });
+    ce.appendChild(b);
+  }
+  for (const [id, lbl] of ROLES_UI) {
+    const b = document.createElement("button");
+    b.className = "chip"; b.setAttribute("aria-pressed", "true");
+    if (id === "fuente" || id === "script" || id === "dato") {
+      const i = document.createElement("i");
+      i.style.background = `var(--rol-${id})`; b.appendChild(i);
+    }
+    b.appendChild(txt(lbl));
+    b.addEventListener("click", () => {
+      const on = b.getAttribute("aria-pressed") === "true";
+      b.setAttribute("aria-pressed", String(!on));
+      if (on) estado.roles.delete(id); else estado.roles.add(id);
+      aplicar();
+    });
+    cr.appendChild(b);
+  }
+}
+function tiles() {
+  const cont = $("#tiles");
+  const mk = (nodo, hero) => {
+    const d = document.createElement("div"); d.className = "tile" + (hero ? " hero" : "");
+    const k = document.createElement("div"); k.className = "k"; k.appendChild(txt(hero ? "MIA " + META.mes : nodo.label));
+    const v = document.createElement("div"); v.className = "v"; v.appendChild(txt(fmt(nodo.score)));
+    d.appendChild(k); d.appendChild(v);
+    const dd = document.createElement("div"); dd.className = "d";
+    if (nodo.delta != null) {
+      const s = document.createElement("span"); s.className = nodo.delta >= 0 ? "up" : "down";
+      s.appendChild(txt((nodo.delta >= 0 ? "▲ " : "▼ ") + signo(nodo.delta)));
+      dd.appendChild(s);
+      dd.appendChild(txt(hero ? " vs " + META.mes_previo : ""));
+    } else dd.appendChild(txt("—"));
+    d.appendChild(dd);
+    d.addEventListener("click", () => { seleccion = nodo.id; resaltar(nodo.id, true); panel(nodo); centrar(nodo); });
+    d.style.cursor = "pointer";
+    return d;
+  };
+  cont.appendChild(mk(byId.get("MIA"), true));
+  for (const e of META.ejes) cont.appendChild(mk(byId.get("eje_" + e), false));
+}
+function tabla() {
+  const tb = $("#t-nodos tbody");
+  for (const n of [...NODOS].sort((a, b) => (a.tipo + a.label).localeCompare(b.tipo + b.label, "es"))) {
+    const tr = document.createElement("tr");
+    const cel = (v, cls) => { const td = document.createElement("td"); if (cls) td.className = cls;
+      td.appendChild(txt(v)); tr.appendChild(td); };
+    cel(n.label); cel(ROL[n.tipo] + (n.clase ? " · " + (CLASE[n.clase] || n.clase) : "") + (n.fuera ? " (fuera del pipeline)" : ""));
+    cel(n.eje === "Indice" ? "—" : n.eje === "Infra" ? "transversal" : n.eje);
+    cel(n.score != null ? fmt(n.score) : "—", "num");
+    cel(n.delta != null ? signo(n.delta) : "—", "num");
+    cel([(n.meta || []).map(([k, v]) => k + ": " + v).join(" · "), n.nota].filter(Boolean).join(" — "));
+    tb.appendChild(tr);
+  }
+  const tl = $("#t-links tbody");
+  const orden = { flujo: 0, config: 1, alerta: 2, calcula: 3 };
+  for (const l of [...ARISTAS].sort((a, b) => (orden[a.kind] - orden[b.kind]) || a.s.label.localeCompare(b.s.label, "es"))) {
+    const tr = document.createElement("tr");
+    const cel = (v, cls) => { const td = document.createElement("td"); if (cls) td.className = cls;
+      td.appendChild(txt(v)); tr.appendChild(td); };
+    cel(l.s.label); cel(l.t.label);
+    cel(l.kind === "flujo" ? "flujo del dato" : l.kind === "alerta" ? "alerta / insumo"
+      : l.kind === "calcula" ? "lo calcula" : "configuración");
+    cel(l.w != null ? fmt(l.w, 2) : "—", "num");
+    cel([l.label, l.nota].filter(Boolean).join(" — "));
+    tl.appendChild(tr);
+  }
+}
+function cabecera() {
+  const s = $("#sub"); s.textContent = "";
+  s.appendChild(txt("Departamento de Políticas Públicas — Fundación Libertad y Progreso · "));
+  const b = document.createElement("b"); b.appendChild(txt(META.n_variables + " variables"));
+  s.appendChild(b);
+  s.appendChild(txt(` en 5 ejes · ${META.n_nucleo} entran al Núcleo · último mes calculado `));
+  const b2 = document.createElement("b"); b2.appendChild(txt(META.mes_label + " (" + META.estado + ")"));
+  s.appendChild(b2);
+  s.appendChild(txt(` · ${NODOS.length} nodos y ${ARISTAS.length} conexiones`));
+  const p = $("#pie"); p.textContent = "";
+  p.appendChild(txt(`Generado el ${META.generado} desde el propio repositorio (variables.yaml + output/). `
+    + `Los valores corresponden a ${META.mes_label} y quedan fijos en este archivo: para actualizarlos, `
+    + `correr python3 scripts/generar_mapa_modelo.py después de la corrida mensual. `
+    + `El valor publicado del MIA es determinístico y auditable: sin IA en el número.`));
+}
+$("#b-color").addEventListener("click", e => {
+  modoColor = modoColor === "rol" ? "score" : "rol";
+  e.target.setAttribute("aria-pressed", String(modoColor === "score"));
+  e.target.textContent = modoColor === "rol" ? "por rol" : "por score";
+  $("#escala").style.display = modoColor === "score" ? "inline-flex" : "none";
+  for (const n of NODOS) pintar(gNodos.get(n.id), n);
+});
+$("#b-etiq").addEventListener("click", e => {
+  modoEtiq = modoEtiq === "claves" ? "todas" : "claves";
+  e.target.setAttribute("aria-pressed", String(modoEtiq === "todas"));
+  e.target.textContent = "etiquetas: " + modoEtiq;
+  if (seleccion) resaltar(seleccion, true); else etiquetas();
+});
+$("#b-vistaform").addEventListener("click", e => {
+  const verTabla = $("#tabla").style.display !== "block";
+  $("#tabla").style.display = verTabla ? "block" : "none";
+  document.querySelector("main").style.display = verTabla ? "none" : "flex";
+  $("#leyenda").style.display = verTabla ? "none" : "flex";
+  e.target.setAttribute("aria-pressed", String(verTabla));
+  e.target.textContent = verTabla ? "Ver grafo" : "Ver tabla";
+});
+$("#b-tema").addEventListener("click", () => {
+  const actual = document.documentElement.getAttribute("data-theme");
+  const oscuro = actual === "dark" || (!actual && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.setAttribute("data-theme", oscuro ? "light" : "dark");
+});
+$("#vista").addEventListener("change", e => { estado.vista = e.target.value; aplicar(); setTimeout(ajustar, 420); });
+$("#buscar").addEventListener("input", e => { estado.q = e.target.value; aplicar(); });
+$("#z-mas").addEventListener("click", () => { k = Math.min(3.2, k * 1.2); aplicarZoom(); });
+$("#z-menos").addEventListener("click", () => { k = Math.max(0.25, k / 1.2); aplicarZoom(); });
+$("#z-fit").addEventListener("click", ajustar);
+$("#z-reset").addEventListener("click", () => { sembrar(); animar(); setTimeout(ajustar, 500); });
+
+/* ───────────────── arranque ───────────────── */
+function medir() { const b = svg.getBoundingClientRect(); W = b.width || 1200; H = b.height || 700; }
+medir(); sembrar(); rotularEjes(); construir(); chips(); tiles(); tabla(); cabecera(); panelVacio(); etiquetas();
+for (let i = 0; i < 260; i++) tick();       // asentado inicial antes del primer cuadro
+posicionar(); ajustar(); animar();
+addEventListener("resize", () => { medir(); anclar(); alpha = Math.max(alpha, .12); animar(); });
+</script>
+</body>
+</html>

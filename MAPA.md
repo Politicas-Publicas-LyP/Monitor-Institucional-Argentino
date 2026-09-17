@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-08-19 17:22 UTC · 41 archivos · 7,860 LOC -->
+<!-- 2026-09-17 18:14 UTC · 43 archivos · 8,369 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `main` — ultimo commit: 2026-08-18 4fcfcd0 Corrida Julio completo · **hay cambios sin commitear**
+Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-08 ef5c7d9 Radares BORA: 2026-09-08 · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -19,6 +19,7 @@ Rama `main` — ultimo commit: 2026-08-18 4fcfcd0 Corrida Julio completo · **ha
 | los radares diarios del BORA en la nube → `.github/workflows/radar_nombramientos.yml` (corre jueces + Presidencia BCRA y commitea los CSV puente) | `./` |
 | qué se versiona y qué no (cachés, logs, archivos_borrar) → `.gitignore` | `./` |
 | ubicar código sin releer el repo → `MAPA.md` y `python3 .mapa/buscar.py "<término>"`; reindexar: `python3 scripts/indexar.py .` | `./` |
+| ver cómo se conecta el modelo (qué alimenta cada variable, qué se cae si falla una fuente) → `Documentos/MIA — Mapa del modelo.html` (grafo interactivo; se regenera con `python3 scripts/generar_mapa_modelo.py`) | `./` |
 | cambiar un ancla, un peso, un modo (suavizado/arrastre) o qué entra al Núcleo → `variables.yaml` (nunca el código; el núcleo usa `nucleo:`/`nucleo_comp`) | `00_Comun/` |
 | el índice dio raro, una variable falta o quedó vieja → `validar.py` + tolerancias en `contracts.yaml` → `output/_alertas_validacion.md` | `00_Comun/` |
 | congelar, reabrir o corregir un mes cerrado del histórico (inmutabilidad) → `archivar_historico.py` (`--reabrir AAAA-MM`) | `00_Comun/` |
@@ -59,6 +60,9 @@ Rama `main` — ultimo commit: 2026-08-18 4fcfcd0 Corrida Julio completo · **ha
 | qué significa confianza ALTA/MEDIA/BAJA o la columna `confirmado` → `LEEME.md` | `07_Radar_Nombramientos/` |
 | el cron / el workflow de Actions (que corre también el radar BCRA) → `.github/workflows/radar_nombramientos.yml` (vive SOLO en la raíz) | `07_Radar_Nombramientos/` |
 | reindexar el proyecto o sellar una bitácora → `indexar.py` (`python3 scripts/indexar.py .` / `--sellar <carpeta>` / `--estructura`) | `scripts/` |
+| regenerar el mapa interactivo del modelo (grafo HTML) → `generar_mapa_modelo.py` (correrlo DESPUÉS de la corrida mensual: congela los valores del mes) | `scripts/` |
+| corregir qué fuente alimenta a qué script, o el texto de una ficha del grafo → `mapa_modelo_topologia.py` (las cañerías; las variables salen de variables.yaml) | `scripts/` |
+| cambiar el aspecto o la interacción del grafo → `mapa_modelo.plantilla.html` | `scripts/` |
 | consultar el índice sin abrir archivos → `.mapa/buscar.py` (copiado automáticamente por el indexador) | `scripts/` |
 | automatizar el reindexado en cada commit → `hook-pre-commit` (copiar a `.git/hooks/pre-commit`) | `scripts/` |
 
@@ -66,10 +70,10 @@ Rama `main` — ultimo commit: 2026-08-18 4fcfcd0 Corrida Julio completo · **ha
 
 | Carpeta | Que es | Arch. | LOC | Bitacora |
 |---|---|---:|---:|---|
-| `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,294 | **vencida** |
+| `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 4 | 1,387 | **vencida** |
+| `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,309 | **vencida** |
 | `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 9 | 1,222 | **vencida** |
-| `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,020 | **vencida** |
-| `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 2 | 933 | **vencida** |
+| `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,060 | **vencida** |
 | `04_Prensa_Institucional/` | Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficial, causas judiciales contra periodistas (FOPEA), medios estatales y acceso de la prensa. | 5 | 826 | **vencida** |
 | `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 802 | **vencida** |
 | `02_Poder_Legislativo/` | Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), eficacia de control (art. 101, informes JGM), costo del Congreso y cumplimiento de sesiones. | 4 | 739 | **vencida** |
@@ -100,16 +104,16 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 |---|---:|---:|---|
 | `00_Comun\infoleg_source.py` | 91 | 3 | `build_session`, `_get_zip_bytes`, `_read_csv_resilient`, `_prepare_dates` |
 | `00_Comun\icia_ensamblado.py` | 265 | 2 | `_cargar_config`, `cargar_nucleo`, `_latest`, `_col` |
+| `scripts\mapa_modelo_topologia.py` | 203 | 1 | — |
 | `scripts\indexar.py` | 714 | 0 | `cargar_gitignore`, `ignorado`, `leer`, `git` |
-| `03_Poder_Judicial\padron_judicial.py` | 460 | 0 | `session`, `_read_csv_resilient`, `_snapshot_date`, `_es_jueces` |
-| `03_Poder_Judicial\scraper_05_cobertura_judicial.py` | 422 | 0 | `session`, `_read_csv_resilient`, `_tasa`, `_snapshot_date` |
+| `03_Poder_Judicial\padron_judicial.py` | 466 | 0 | `session`, `_read_csv_resilient`, `_snapshot_date`, `_es_jueces` |
+| `03_Poder_Judicial\scraper_05_cobertura_judicial.py` | 431 | 0 | `session`, `_read_csv_resilient`, `_tasa`, `_snapshot_date` |
 | `01_Poder_Ejecutivo\scraper_01_dnu_leyes.py` | 389 | 0 | `DNULeyesScraper`, `main` |
 | `07_Radar_Nombramientos\radar_nombramientos.py` | 361 | 0 | `normalizar`, `es_candidata`, `_fecha_de_url`, `get_con_reintentos` |
 | `00_Comun\generar_reporte_mensual.py` | 336 | 0 | `fmt`, `signo`, `mes_label`, `graficos` |
+| `01_Poder_Ejecutivo\scraper_16_atn.py` | 323 | 0 | `session`, `_to_num`, `atn_anual`, `atn_mensual_share` |
 | `05_Banco_Central\radar_bcra.py` | 284 | 0 | `normaliza`, `get_con_reintentos`, `_fecha_de_url`, `obtener_lista_bora` |
-| `01_Poder_Ejecutivo\scraper_16_atn.py` | 283 | 0 | `session`, `_to_num`, `atn_anual`, `atn_mensual_share` |
-| `02_Poder_Legislativo\scraper_02_calidad_normativa.py` | 241 | 0 | `_usar_almacen_del_sistema`, `session`, `count_presentados`, `Cache` |
-| `03_Poder_Judicial\scraper_06_resolucion_csjn.py` | 221 | 0 | `csjn_miembros`, `session`, `_num`, `parse_anuario` |
+| `scripts\generar_mapa_modelo.py` | 251 | 0 | `num`, `mes_label`, `leer_frescura`, `leer_valores` |
 
 ## Flujo interno
 

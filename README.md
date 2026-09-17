@@ -11,7 +11,7 @@ variable: el mejor valor posible → 100, el peor → 0).
 ## Repositorio y régimen de trabajo
 
 - **Fuente única de verdad:** este repositorio en GitHub —
-  https://github.com/Politicas-Publicas-LyP/<REPO>  (renombrar el repo en GitHub al nuevo nombre y actualizar esta URL; hasta entonces sigue siendo el slug …-ITR-)
+  https://github.com/Politicas-Publicas-LyP/Monitor-Institucional-Argentino  (rama `main`; el slug viejo …-ITR- redirige, pero **no usarlo**: `raw.githubusercontent.com` sirve contenido desactualizado sobre el nombre viejo).
 - El índice se trabaja **en paralelo con varias cuentas/máquinas**. La sincronización es por
   **GitHub Desktop**:
   1. **Pull** antes de empezar (traer lo último).

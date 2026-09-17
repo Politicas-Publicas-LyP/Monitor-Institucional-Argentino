@@ -6,7 +6,7 @@ valor publicado). Este documento es la referencia para operar y mantener el proy
 
 ## Repositorio y régimen de trabajo (LEER PRIMERO)
 
-- **Fuente única de verdad (remoto):** https://github.com/Politicas-Publicas-LyP/<REPO>  (renombrar el repo en GitHub al nuevo nombre y actualizar esta URL; hasta entonces sigue siendo el slug …-ITR-)
+- **Fuente única de verdad (remoto):** https://github.com/Politicas-Publicas-LyP/Monitor-Institucional-Argentino  (rama `main`; el slug viejo …-ITR- redirige, pero **no usarlo**: `raw.githubusercontent.com` sirve contenido desactualizado sobre el nombre viejo).
   Siempre extraer la última versión de ahí antes de trabajar y subir los cambios al terminar.
 - **Trabajo en paralelo:** el índice se desarrolla con varias cuentas/máquinas a la vez. La
   sincronización se hace con **GitHub Desktop** (pull antes de empezar, commit + push al cerrar).

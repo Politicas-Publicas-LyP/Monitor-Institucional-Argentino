@@ -48,9 +48,15 @@ PADRON_BASE = OUTPUT_DIR / "padron_judicial_base.csv"  # ancla = snapshot oficia
 REVISION = OUTPUT_DIR / "padron_revision.csv"          # eventos sin cargo asignado
 TASAS_EST = OUTPUT_DIR / "padron_tasas_estimadas.csv"  # tasas recalculadas
 RADAR_ALTAS = OUTPUT_DIR / "nombramientos_jueces.csv"  # salida del radar (designaciones)
-RADAR_ALTAS_URL = os.environ.get("MIA_RADAR_CSV_URL", "")  # mismo puente que la cobertura
+# Mismo puente que la cobertura. OJO con el slug: el repo se renombró a
+# `Monitor-Institucional-Argentino` y `raw.githubusercontent.com` sobre el nombre VIEJO (…-ITR-)
+# devuelve contenido desactualizado (verificado 2026-09-17). El default ya usa el nombre nuevo.
+REPO_RAW = "https://raw.githubusercontent.com/Politicas-Publicas-LyP/Monitor-Institucional-Argentino/main/output"
+RADAR_ALTAS_URL = os.environ.get("MIA_RADAR_CSV_URL") or f"{REPO_RAW}/nombramientos_jueces.csv"
+if "-ITR-" in RADAR_ALTAS_URL:
+    RADAR_ALTAS_URL = f"{REPO_RAW}/nombramientos_jueces.csv"
 RADAR_BAJAS = OUTPUT_DIR / "bajas_jueces.csv"          # salida del detector de bajas (radar)
-RADAR_BAJAS_URL = RADAR_ALTAS_URL.replace("nombramientos_jueces", "bajas_jueces") if RADAR_ALTAS_URL else ""
+RADAR_BAJAS_URL = RADAR_ALTAS_URL.replace("nombramientos_jueces", "bajas_jueces")
 HEADERS = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                           "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
            "Accept": "application/json,*/*"}

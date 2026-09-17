@@ -49,7 +49,11 @@ OBS = OUTPUT_DIR / "atn_obs_mensual.csv"   # OJO: NO usar prefijo "atn_mensual_"
 HEADERS = {"User-Agent": "MIA-LyP/0.1 (politicaspublicas@libertadyprogreso.org)"}
 DEV_COL = "credito_devengado"
 MES_COL = "impacto_presupuestario_mes"
-PATRON = re.compile(r"aportes?\s+del\s+tesoro\s+nacional", re.IGNORECASE)
+# Etiqueta del ATN en las descripciones de DGSIAF. Se acepta "Aporte(s) [no reintegrables]
+# del Tesoro [Nacional]" porque la redacción varía entre ejercicios. NO matchea la FUENTE
+# de financiamiento "Tesoro Nacional" (fuente 1.1), que no lleva "aporte" adelante.
+PATRON = re.compile(r"aportes?\s+(?:no\s+reintegrables\s+)?del\s+tesoro(?:\s+nacional)?",
+                    re.IGNORECASE)
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-7s | %(message)s",
                     datefmt="%H:%M:%S")
@@ -78,7 +82,12 @@ def atn_anual(anio: int, s: requests.Session) -> dict | None:
     usar_cache = anio < datetime.now().year
     if usar_cache and cache.exists():
         r = pd.read_csv(cache).iloc[0]
-        return {"share": float(r["share"]), "atn_dev": float(r["atn_dev"])}
+        # Caché ENVENENADA: las corridas viejas guardaban 0,0 cuando el matcheo fallaba, y ese
+        # 0 quedaba fijo como dato definitivo. Un ATN devengado de 0 en todo un ejercicio no
+        # existe, así que se descarta la caché y se recalcula con la etiqueta corregida.
+        if float(r["atn_dev"]) > 0:
+            return {"share": float(r["share"]), "atn_dev": float(r["atn_dev"])}
+        log.warning("DGSIAF %s: caché con ATN=0 (artefacto del matcheo viejo) → se ignora y recalcula.", anio)
 
     log.info("DGSIAF %s: descargando crédito anual...", anio)
     try:
@@ -118,6 +127,16 @@ def atn_anual(anio: int, s: requests.Session) -> dict | None:
     if tot <= 0:
         return None
 
+    # SIN DATO ≠ CERO. Si NINGUNA fila del año matchea la etiqueta, no es que el ATN haya
+    # sido cero: es que en ese ejercicio se llama de otro modo. Devolver 0,0 lo haría pasar
+    # por "ATN nulo" = institucionalidad IDEAL, y además quedaba cacheado como definitivo
+    # (así se llenaron de ceros 2003–2016). Ahora se reporta SIN DATO y no se cachea.
+    if int(mask.sum()) == 0:
+        log.error("DGSIAF %s: 0 filas matchean la etiqueta ATN sobre un devengado total de "
+                  "%.0f → SIN DATO (no es cero). Correr `--diagnostico %s` para ver cómo se "
+                  "etiqueta el ATN en ese ejercicio.", anio, tot, anio)
+        return None
+
     # diagnóstico (clave para validar el filtro en el log local)
     log.info("DGSIAF %s: filas ATN=%d | columnas con match: %s", anio, int(mask.sum()),
              {k: v for k, v in hit_cols.items()})
@@ -137,7 +156,12 @@ def atn_mensual_share(anio: int, s: requests.Session) -> dict:
     usar_cache = anio < datetime.now().year
     if usar_cache and cache.exists():
         d = pd.read_csv(cache)
-        return dict(zip(d["mes"].astype(int), d["share"]))
+        # Misma auto-sanación que el anual: un ejercicio ENTERO con share 0 en los 12 meses es
+        # un fallo de matcheo cacheado, no un año sin ATN. Se ignora y se recalcula.
+        if pd.to_numeric(d["share"], errors="coerce").fillna(0).gt(0).any():
+            return dict(zip(d["mes"].astype(int), d["share"]))
+        log.warning("DGSIAF mensual %s: caché con todos los meses en 0 (artefacto del matcheo "
+                    "viejo) → se ignora y recalcula.", anio)
     try:
         resp = s.get(MENSUAL.format(anio=anio), timeout=240)
     except Exception as e:  # noqa: BLE001
@@ -159,6 +183,13 @@ def atn_mensual_share(anio: int, s: requests.Session) -> dict:
     mask = pd.Series(False, index=df.index)
     for c in desc_cols:
         mask |= df[c].fillna("").str.contains(PATRON)
+    # Igual que en el anual: si el archivo ENTERO no tiene una sola fila de ATN, la etiqueta
+    # cambió → SIN DATO. (Que un MES puntual dé 0 teniendo matches en el año sí es un cero
+    # real: en la era Milei hay meses sin ATN, y ese cero debe publicarse.)
+    if int(mask.sum()) == 0:
+        log.error("DGSIAF mensual %s: 0 filas matchean la etiqueta ATN en todo el ejercicio → "
+                  "SIN DATO (no son ceros). Correr `--diagnostico %s`.", anio, anio)
+        return {}
     out = {}
     for mes in sorted(int(m) for m in df["mes"].dropna().unique()):
         en_mes = df["mes"] == mes
@@ -233,21 +264,30 @@ def main() -> int:
 
     data_m = {a: atn_mensual_share(a, s) for a in anios}   # share ATN por mes
 
-    # INMUTABILIDAD DE PUBLICACIÓN: los meses YA CERRADOS y observados no se recalculan en
-    # corridas futuras; solo se actualiza el mes en curso y se agregan meses nuevos. Así el
-    # histórico Milei se calcula UNA vez con el ATN mensual y queda fijo para publicar.
+    # INMUTABILIDAD DE PUBLICACIÓN: un mes se observa UNA sola vez —en la primera corrida
+    # posterior a su cierre, ya con el devengado completo— y desde entonces no se recalcula.
+    # Así el histórico Milei queda fijo para publicar.
     mes_actual = pd.Period(datetime.now().strftime("%Y-%m"), freq="M")
     obs = {}
     if OBS.exists():
         _o = pd.read_csv(OBS, dtype={"periodo": str})
         obs = dict(zip(_o["periodo"].astype(str), pd.to_numeric(_o["share"], errors="coerce")))
+    # El mes EN CURSO tiene devengado PARCIAL. Si se persiste, la regla de inmutabilidad lo
+    # congela con ese parcial apenas el mes cierra (así quedó 2026-08 = 0,0 observado el 19-ago).
+    # Por eso ahora el mes en curso NUNCA entra al store: se usa sólo en memoria para el
+    # nowcast de la serie, y se observa recién en la primera corrida del mes siguiente.
+    en_curso: dict[str, float] = {}
     for a in anios:
         for mes, sh in data_m.get(a, {}).items():
             per = f"{a}-{int(mes):02d}"
-            if pd.Period(per, freq="M") < mes_actual and per in obs:
-                continue   # mes cerrado ya publicado → inmutable
-            obs[per] = sh
+            if pd.Period(per, freq="M") >= mes_actual:
+                en_curso[per] = sh          # parcial → nowcast, no se publica
+                continue
+            if per in obs and not pd.isna(obs[per]):
+                continue                    # mes cerrado ya observado → inmutable
+            obs[per] = sh                   # primera observación del mes YA CERRADO
     pd.DataFrame({"periodo": sorted(obs), "share": [obs[k] for k in sorted(obs)]}).to_csv(OBS, index=False)
+    vista = {**obs, **en_curso}   # lo que ve la serie = publicado + nowcast del mes en curso
 
     periods = pd.period_range(args.desde, args.hasta, freq="M")
     rows = []
@@ -258,7 +298,7 @@ def main() -> int:
                          "atn_share_mensual": float("nan"), "stale_meses": float("nan")})
             continue
         a = max(usable)
-        sm = obs.get(str(p))                 # share mensual INMUTABLE (lo que usa el índice Milei)
+        sm = vista.get(str(p))               # share mensual publicado (+ nowcast del mes en curso)
         if sm is None or pd.isna(sm):
             sm = data[a]["share"]            # FALLBACK al share ANUAL si no hay mensual (no rompe el núcleo viejo)
         stale = 0 if a == p.year else (p - pd.Period(f"{a}-12", "M")).n
