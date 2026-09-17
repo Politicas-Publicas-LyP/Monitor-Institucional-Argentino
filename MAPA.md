@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-09-17 18:27 UTC · 43 archivos · 8,369 LOC -->
+<!-- 2026-09-17 18:40 UTC · 43 archivos · 8,369 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-17 0f14e2f Corregir tres bugs del ATN, actualizar slug del repo y agregar mapa del modelo · **hay cambios sin commitear**
+Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-17 4018589 Corrida mensual de agosto 2026 (cierre) y limpieza de cachÃ©s huÃ©rfanas · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -125,7 +125,7 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 
 Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
-- `output/_alertas_validacion.md` + `output/mia_reporte.md` (4 commits)
+- `output/_alertas_validacion.md` + `output/mia_reporte.md` (5 commits)
 - `01_Poder_Ejecutivo/BITACORA.md` + `AGENTS.md` (3 commits)
 - `00_Comun/BITACORA.md` + `output/_alertas_validacion.md` (3 commits)
 - `00_Comun/BITACORA.md` + `05_Banco_Central/BITACORA.md` (3 commits)
