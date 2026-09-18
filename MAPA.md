@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-09-18 13:45 UTC · 43 archivos · 8,490 LOC -->
+<!-- 2026-09-18 15:36 UTC · 43 archivos · 8,560 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-18 b1b058d ATN: identificar por cÃ³digo de estructura programÃ¡tica para 2003-2016 · **hay cambios sin commitear**
+Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-18 e84710d Ampliar colchÃ³n, correr nÃºcleo mensual 2015+ y fallback de Calidad Normativa · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -36,7 +36,7 @@ Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-18 b1b058d 
 | costo del Congreso como % del gasto → `scraper_12_costo_legislativo.py` (excluye AGN/Defensoría) | `02_Poder_Legislativo/` |
 | sesiones citadas vs realizadas / fracasadas → `scraper_14_sesiones.py` | `02_Poder_Legislativo/` |
 | error TLS `CERTIFICATE_VERIFY_FAILED` en sitios del Congreso → truststore (los tres scrapers lo intentan); último recurso `--insecure` en scraper_02 | `02_Poder_Legislativo/` |
-| titularidad, subrogancia, vacancia o el padrón de cargos de jueces → `padron_judicial.py` (`--construir` / `--actualizar`; estimado vs oficial) | `03_Poder_Judicial/` |
+| titularidad, subrogancia, vacancia o el padrón de cargos de jueces → `padron_judicial.py` (`--construir` / `--actualizar`; estimado vs oficial; altas también desde el Consejo de la Magistratura, complementario al radar del BORA) | `03_Poder_Judicial/` |
 | meses sin nombramiento, puente con el radar del BORA → `scraper_05_cobertura_judicial.py` (`fechas_radar()`, env `MIA_RADAR_CSV_URL`) | `03_Poder_Judicial/` |
 | tasa de resolución, mediana de días, vacantes de la Corte → `scraper_06_resolucion_csjn.py` (cifras verificadas + `CSJN_MIEMBROS_REGLAS`; cadencia ANUAL: constante entre anuarios es normal) | `03_Poder_Judicial/` |
 | un evento del BORA no se aplicó al padrón → `output/padron_revision.csv` (cola de revisión humana) | `03_Poder_Judicial/` |
@@ -71,7 +71,7 @@ Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-18 b1b058d 
 | Carpeta | Que es | Arch. | LOC | Bitacora |
 |---|---|---:|---:|---|
 | `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 4 | 1,387 | **vencida** |
-| `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,309 | **vencida** |
+| `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,379 | ok |
 | `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 9 | 1,229 | **vencida** |
 | `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,119 | ok |
 | `04_Prensa_Institucional/` | Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficial, causas judiciales contra periodistas (FOPEA), medios estatales y acceso de la prensa. | 5 | 826 | **vencida** |
@@ -106,7 +106,7 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 | `00_Comun\icia_ensamblado.py` | 265 | 2 | `_cargar_config`, `cargar_nucleo`, `_latest`, `_col` |
 | `scripts\mapa_modelo_topologia.py` | 203 | 1 | — |
 | `scripts\indexar.py` | 714 | 0 | `cargar_gitignore`, `ignorado`, `leer`, `git` |
-| `03_Poder_Judicial\padron_judicial.py` | 466 | 0 | `session`, `_read_csv_resilient`, `_snapshot_date`, `_es_jueces` |
+| `03_Poder_Judicial\padron_judicial.py` | 536 | 0 | `session`, `_read_csv_resilient`, `_snapshot_date`, `_es_jueces` |
 | `03_Poder_Judicial\scraper_05_cobertura_judicial.py` | 431 | 0 | `session`, `_read_csv_resilient`, `_tasa`, `_snapshot_date` |
 | `01_Poder_Ejecutivo\scraper_01_dnu_leyes.py` | 389 | 0 | `DNULeyesScraper`, `main` |
 | `01_Poder_Ejecutivo\scraper_16_atn.py` | 382 | 0 | `_mask_fallback_programa19`, `session`, `_to_num`, `atn_anual` |
@@ -125,15 +125,15 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 
 Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
-- `output/_alertas_validacion.md` + `output/mia_reporte.md` (5 commits)
-- `.mapa/mapa.json` + `MAPA.md` (4 commits)
+- `output/_alertas_validacion.md` + `output/mia_reporte.md` (6 commits)
+- `.mapa/mapa.json` + `MAPA.md` (5 commits)
+- `correr_mensual.sh` + `output/_alertas_validacion.md` (4 commits)
 - `01_Poder_Ejecutivo/BITACORA.md` + `01_Poder_Ejecutivo/scraper_16_atn.py` (3 commits)
 - `01_Poder_Ejecutivo/BITACORA.md` + `AGENTS.md` (3 commits)
 - `00_Comun/BITACORA.md` + `output/_alertas_validacion.md` (3 commits)
 - `00_Comun/BITACORA.md` + `05_Banco_Central/BITACORA.md` (3 commits)
 - `AGENTS.md` + `correr_mensual.sh` (3 commits)
 - `AGENTS.md` + `output/_alertas_validacion.md` (3 commits)
-- `correr_mensual.sh` + `output/_alertas_validacion.md` (3 commits)
 - `03_Poder_Judicial/BITACORA.md` + `output/itr_reporte.md` (3 commits)
 
 ## Fuentes externas
@@ -148,8 +148,8 @@ Segun el historial de git. Si vas a cambiar uno, mira el otro.
 - `descarga.aaip.gob.ar` — `01_Poder_Ejecutivo\scraper_11_transparencia_v2.py`
 - `datos.hcdn.gob.ar` — `02_Poder_Legislativo\scraper_02_calidad_normativa.py`
 - `senado.gob.ar` — `02_Poder_Legislativo\scraper_03_eficacia_control.py`
+- `mc.consejomagistratura.gov.ar` — `03_Poder_Judicial\padron_judicial.py`
 - `csjn.gov.ar` — `03_Poder_Judicial\scraper_06_resolucion_csjn.py`
-- `mpf.gob.ar` — `03_Poder_Judicial\scraper_10_integridad.py`
 
 ## Configuracion requerida
 
@@ -157,5 +157,5 @@ Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
 ## Frescura
 
-- Bitacoras vencidas: `./`, `00_Comun/`, `03_Poder_Judicial/`, `04_Prensa_Institucional/`, `05_Banco_Central/`, `07_Radar_Nombramientos/`, `scripts/`
+- Bitacoras vencidas: `./`, `00_Comun/`, `04_Prensa_Institucional/`, `05_Banco_Central/`, `07_Radar_Nombramientos/`, `scripts/`
 - Carpetas sin bitacora: `archivos_borrar\_retirados_20260819/`

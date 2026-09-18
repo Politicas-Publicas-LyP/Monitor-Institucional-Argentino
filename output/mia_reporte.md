@@ -2,9 +2,9 @@
 
 *Escala 0-100 ANCLADA AL IDEAL liberal de transparencia y frenos y contrapesos (no relativa al pasado) - suavizado 12 meses*
 
-## MIA actual: **54.8** (2026-08)
+## MIA actual: **54.9** (2026-08)
 
-Al inicio del periodo (2024-01) era 51.1; variacion de **+3.7** puntos.
+Al inicio del periodo (2024-01) era 51.1; variacion de **+3.8** puntos.
 
 ## Sub-indices por poder (ultimo mes)
 
@@ -12,7 +12,7 @@ Al inicio del periodo (2024-01) era 51.1; variacion de **+3.7** puntos.
 |---|---|---|
 | Ejecutivo | 30% | 51.4 |
 | Legislativo | 20% | 48.0 |
-| Judicial | 20% | 45.2 |
+| Judicial | 20% | 45.4 |
 | Prensa | 15% | 71.5 |
 | Banco Central | 15% | 66.7 |
 
@@ -28,7 +28,7 @@ Al inicio del periodo (2024-01) era 51.1; variacion de **+3.7** puntos.
 | Calidad Normativa | Legislativo | 10% | 70.0 |
 | Costo del Legislativo | Legislativo | 3% | 83.3 |
 | Desempeño de la Corte | Judicial | 15% | 30.0 |
-| Cobertura Judicial | Judicial | 10% | 68.0 |
+| Cobertura Judicial | Judicial | 10% | 68.6 |
 | Escrutinio Abierto | Prensa | 6% | 100.0 |
 | Pauta Publicitaria | Prensa | 5% | 99.9 |
 | Causas contra periodistas | Prensa | 4% | 0.0 |

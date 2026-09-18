@@ -57,6 +57,14 @@ if "-ITR-" in RADAR_ALTAS_URL:
     RADAR_ALTAS_URL = f"{REPO_RAW}/nombramientos_jueces.csv"
 RADAR_BAJAS = OUTPUT_DIR / "bajas_jueces.csv"          # salida del detector de bajas (radar)
 RADAR_BAJAS_URL = RADAR_ALTAS_URL.replace("nombramientos_jueces", "bajas_jueces")
+# Fuente COMPLEMENTARIA de altas (2026-09-18): "Ternas remitidas al PEN" del Consejo de la
+# Magistratura (mapadeconcursos), con fecha_designación confirmada por concurso/juzgado. NO
+# reemplaza al radar del BORA (que sigue siendo la fuente primaria); es un segundo canal para
+# detectar designaciones que el radar no pudo mapear. De las tres exportaciones del Consejo,
+# solo esta ("Ternas remitidas al PEN") parsea limpio como CSV — las otras dos ("en trámite" y
+# "concluidos") tienen columnas de texto libre (órdenes de mérito) con comas sin escapar que
+# rompen el formato fila por fila; se descartaron por calidad de dato, no por falta de acceso.
+CONSEJO_REMITIDOS_URL = "https://mc.consejomagistratura.gov.ar/mapadeconcursos/export_remitidos.php"
 HEADERS = {"User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                           "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"),
            "Accept": "application/json,*/*"}
@@ -370,6 +378,50 @@ def _match(ev_org: str, pad: pd.DataFrame, umbral: float = 0.6):
     return [i for _, i in puntajes]
 
 
+def _fix_anio_truncado(fecha_str: str) -> str:
+    """El CSV del Consejo trae algunas fechas con el siglo en cero (ej. '0026-06-16' en vez de
+    '2026-06-16' — bug de exportación de la fuente). Se corrige antes de parsear; sin esto, esas
+    filas se pierden como fecha inválida."""
+    fecha_str = (fecha_str or "").strip()
+    return "20" + fecha_str[2:] if re.match(r"^00\d{2}-\d{2}-\d{2}", fecha_str) else fecha_str
+
+
+def _cargar_eventos_consejo() -> pd.DataFrame:
+    """Altas confirmadas por el Consejo de la Magistratura (ver nota en CONSEJO_REMITIDOS_URL).
+    Se descarga fresco en cada corrida (regla de frescura); si falla o cambia de formato, se
+    ignora sin frenar el resto de --actualizar (es un complemento, no la fuente primaria)."""
+    try:
+        r = requests.get(CONSEJO_REMITIDOS_URL, headers=HEADERS, timeout=60)
+        if r.status_code != 200:
+            log.warning("Consejo de la Magistratura: HTTP %s en export_remitidos.php — se ignora.", r.status_code)
+            return pd.DataFrame()
+        df = pd.read_csv(io.StringIO(r.text))
+    except Exception as e:  # noqa: BLE001
+        log.warning("Consejo de la Magistratura: no se pudo descargar/leer (%s) — se ignora.", type(e).__name__)
+        return pd.DataFrame()
+    df.columns = [c.strip() for c in df.columns]
+    col_desig = next((c for c in df.columns if "designaci" in c.lower()), None)
+    col_organo = next((c for c in df.columns if c.lower() == "juzgado_tribunal_camara_nombre"), None)
+    col_nombre = next((c for c in df.columns if c.lower() == "nombre_apellido"), None)
+    col_concurso = next((c for c in df.columns if re.match(r"concurso_n", c.lower())), None)
+    if not (col_desig and col_organo):
+        log.warning("Consejo de la Magistratura: cambiaron las columnas del export, no encuentro "
+                    "designación/juzgado — se ignora esta corrida.")
+        return pd.DataFrame()
+    fecha = pd.to_datetime(df[col_desig].astype(str).map(_fix_anio_truncado), errors="coerce")
+    df = df[fecha.notna()].copy()
+    df["fecha_publicacion"] = fecha[fecha.notna()].dt.strftime("%Y-%m-%d")
+    df["organo"] = df[col_organo]
+    nombre = df[col_nombre].astype(str) if col_nombre else ""
+    concurso = df[col_concurso].astype(str) if col_concurso else ""
+    df["titulo"] = "Designación (Consejo de la Magistratura): " + nombre + " — concurso " + concurso
+    df["confianza"] = "ALTA"   # fecha_designación ya confirmada por el propio Consejo
+    df["url"] = ""             # no hay decreto asociado; el "organo" ya viene resuelto
+    df["_fuente"] = "consejo_magistratura"
+    log.info("Consejo de la Magistratura: %s designaciones confirmadas leídas.", len(df))
+    return _filtrar_conf(df[["organo", "titulo", "confianza", "url", "fecha_publicacion", "_fuente"]], "alta")
+
+
 def actualizar() -> int:
     if not PADRON_BASE.exists():
         log.error("No existe %s. Corré primero: padron_judicial.py --construir", PADRON_BASE.name)
@@ -380,8 +432,10 @@ def actualizar() -> int:
 
     altas = _cargar_eventos(RADAR_ALTAS, "alta", url=RADAR_ALTAS_URL)
     bajas = _cargar_eventos(RADAR_BAJAS, "baja", url=RADAR_BAJAS_URL)
-    eventos = pd.concat([x for x in [altas, bajas] if len(x)], ignore_index=True) \
-        if (len(altas) or len(bajas)) else pd.DataFrame()
+    consejo = _cargar_eventos_consejo()
+    fuentes = [altas, bajas, consejo]
+    eventos = pd.concat([x for x in fuentes if len(x)], ignore_index=True) \
+        if any(len(x) for x in fuentes) else pd.DataFrame()
 
     # Solo eventos POSTERIORES al snapshot oficial: los anteriores ya están en el dato duro,
     # aplicarlos sería contar dos veces. El padrón es un overlay desde la fecha del snapshot.
@@ -395,31 +449,47 @@ def actualizar() -> int:
             log.info("%s evento(s) <= snapshot (%s) ignorados: ya están en el dato oficial.", previos, snap_fecha)
     log.info("Eventos a aplicar (posteriores al snapshot): %s", len(eventos))
 
-    revision, aplicados = [], 0
+    revision, aplicados, ya_aplicados_otra_fuente = [], 0, 0
     for _, ev in eventos.iterrows():
-        # Autoritativo: leer el órgano del cuerpo del decreto; respaldo: el `organo` del radar.
-        org_raw = organo_desde_bora(ev.get("url", "")) or ev.get("organo", "") or ev.get("titulo", "")
+        # Autoritativo: leer el órgano del cuerpo del decreto (si hay URL de BORA); respaldo:
+        # el `organo` que ya trae el evento (el Consejo de la Magistratura no tiene decreto
+        # asociado, viene resuelto directamente).
+        url_ev = ev.get("url", "")
+        org_raw = (organo_desde_bora(url_ev) if url_ev else "") or ev.get("organo", "") or ev.get("titulo", "")
         org = limpiar_organo(org_raw)
-        time.sleep(0.8)
+        if url_ev:
+            time.sleep(0.8)
         cand = _match(org, pad)
         if not cand:
             revision.append({**ev.to_dict(), "_motivo": "sin cargo coincidente", "_organo": org})
             continue
-        objetivo = None
+        objetivo, ya_titular = None, False
         for i in cand:                       # alta → un cargo NO titular; baja → uno Titular
             est = pad.at[i, "estado"]
             if ev["_tipo"] == "alta" and est != "Titular":
                 objetivo = i; break
+            if ev["_tipo"] == "alta" and est == "Titular":
+                ya_titular = True
             if ev["_tipo"] == "baja" and est == "Titular":
                 objetivo = i; break
         if objetivo is None:
+            # Una alta del Consejo que ya encuentra el cargo en Titular casi siempre significa
+            # que otra fuente (el radar del BORA) ya la aplicó antes en esta misma corrida —
+            # no es un caso ambiguo, así que no ensucia la cola de revisión humana.
+            if ya_titular and ev.get("_fuente") == "consejo_magistratura":
+                ya_aplicados_otra_fuente += 1
+                continue
             revision.append({**ev.to_dict(), "_motivo": f"match sin cargo en estado esperado ({ev['_tipo']})", "_organo": org})
             continue
         pad.at[objetivo, "estado"] = "Titular" if ev["_tipo"] == "alta" else "Vacante"
-        pad.at[objetivo, "estado_fuente"] = "estimado-radar" if ev["_tipo"] == "alta" else "estimado-baja"
+        pad.at[objetivo, "estado_fuente"] = ("estimado-consejo" if ev.get("_fuente") == "consejo_magistratura"
+                                             else "estimado-radar") if ev["_tipo"] == "alta" else "estimado-baja"
         pad.at[objetivo, "evento_norma"] = str(ev.get("titulo", ""))[:120]
         pad.at[objetivo, "evento_fecha"] = ev.get("fecha_publicacion", "") or ev.get("fecha_deteccion", "")
         aplicados += 1
+    if ya_aplicados_otra_fuente:
+        log.info("%s alta(s) del Consejo de la Magistratura ya estaban aplicadas por otra fuente "
+                 "(radar del BORA) — no se mandan a revisión.", ya_aplicados_otra_fuente)
 
     pad = pad.drop(columns=["_tok", "_num"])
     pad.to_csv(PADRON, index=False, encoding="utf-8")

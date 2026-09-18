@@ -1,4 +1,4 @@
-# MIA — Validación QA · 2026-09-18 10:41
+# MIA — Validación QA · 2026-09-18 12:35
 
 **Estado:** OK
 **Política:** NOTIFICAR, no bloquear la publicación. (exit 2 = publicar + avisar)
