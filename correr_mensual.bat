@@ -22,11 +22,18 @@ setlocal
 cd /d "%~dp0"
 
 REM --- Rango ---
-REM  DESDE    = colchon: arranca 1 anio antes para que el suavizado de 12m este
-REM             COMPLETO al inicio publicado (ene-2024).  No se publica el tramo 2023.
+REM  DESDE    = colchon: arranca 2 anios antes para que el suavizado de 12m este
+REM             COMPLETO al inicio publicado (ene-2024), con margen. No se publica
+REM             el tramo 2022-2023. Ampliado de 1 a 2 anios el 2026-09-18: con solo
+REM             1 anio, un componente cuya fuente empieza tarde en el colchon (ver
+REM             ejemplo real: modif_12m de Discrecionalidad, la OPC recien tiene
+REM             pagina propia desde 2024 -> rolling(12, min_periods=6) no completaba
+REM             hasta mediados de 2024, YA DENTRO de lo publicado). Con 2 anios de
+REM             colchon el margen es mayor aunque esa fuente puntual igual no tenga
+REM             dato antes de 2024 (eso es un piso real de la OPC, no de colchon).
 REM  PUBLICAR = inicio publicado = gestion Milei (enero 2024), ya suavizado.
 REM  HASTA    = arg %1 (mes a cerrar, YYYY-MM) si se pasa; si no, el mes en curso.
-set "DESDE=2023-01"
+set "DESDE=2022-01"
 set "PUBLICAR=2024-01"
 if not "%~1"=="" (
   set "HASTA=%~1"

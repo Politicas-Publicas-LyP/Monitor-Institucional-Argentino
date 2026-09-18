@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-09-18 13:13 UTC · 43 archivos · 8,428 LOC -->
+<!-- 2026-09-18 13:45 UTC · 43 archivos · 8,490 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-17 4458d09 Correr el nÃºcleo histÃ³rico 2003-2026 con el ATN corregido · **hay cambios sin commitear**
+Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-18 b1b058d ATN: identificar por cÃ³digo de estructura programÃ¡tica para 2003-2016 · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -31,7 +31,7 @@ Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-17 4458d09 
 | pedidos de acceso a la información, tasa de respuesta o en plazo → `scraper_11_transparencia_v2.py` (fechado por mes de RESOLUCIÓN) | `01_Poder_Ejecutivo/` |
 | ATN, reparto discrecional a provincias, share del gasto → `scraper_16_atn.py` (inmutabilidad en `atn_obs_mensual.csv`; fallback por Jurisdicción 30/Programa 19 para 2003-2016 sin etiqueta de texto) | `01_Poder_Ejecutivo/` |
 | una variable del eje quedó plana durante meses → revisar cachés ANTES de concluir "sin novedades" (regla de frescura, AGENTS.md) | `01_Poder_Ejecutivo/` |
-| leyes sancionadas, proyectos simbólicos (declaraciones/resoluciones) → `scraper_02_calidad_normativa.py` (caché `_cache_congreso.json`; el mes en curso nunca se persiste) | `02_Poder_Legislativo/` |
+| leyes sancionadas, proyectos simbólicos (declaraciones/resoluciones) → `scraper_02_calidad_normativa.py` (caché `_cache_congreso.json`; el mes en curso nunca se persiste; fallback a Datos Abiertos de HCDN si el buscador falla) | `02_Poder_Legislativo/` |
 | informes del Jefe de Gabinete / art. 101 → `scraper_03_eficacia_control.py` (suplemento editable `INFORMES_EXTRA` cuando la tabla del Senado atrasa) | `02_Poder_Legislativo/` |
 | costo del Congreso como % del gasto → `scraper_12_costo_legislativo.py` (excluye AGN/Defensoría) | `02_Poder_Legislativo/` |
 | sesiones citadas vs realizadas / fracasadas → `scraper_14_sesiones.py` | `02_Poder_Legislativo/` |
@@ -72,15 +72,15 @@ Rama `fix/atn-bugs-repo-slug-mapa-modelo` — ultimo commit: 2026-09-17 4458d09 
 |---|---|---:|---:|---|
 | `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 4 | 1,387 | **vencida** |
 | `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,309 | **vencida** |
-| `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 9 | 1,222 | **vencida** |
+| `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 9 | 1,229 | **vencida** |
 | `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,119 | ok |
 | `04_Prensa_Institucional/` | Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficial, causas judiciales contra periodistas (FOPEA), medios estatales y acceso de la prensa. | 5 | 826 | **vencida** |
 | `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 802 | **vencida** |
-| `02_Poder_Legislativo/` | Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), eficacia de control (art. 101, informes JGM), costo del Congreso y cumplimiento de sesiones. | 4 | 739 | **vencida** |
+| `02_Poder_Legislativo/` | Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), eficacia de control (art. 101, informes JGM), costo del Congreso y cumplimiento de sesiones. | 4 | 793 | ok |
 | `07_Radar_Nombramientos/` | Radar del BORA (GitHub Actions, L–V 9:30 ART) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo. | 1 | 361 | **vencida** |
 | `archivos_borrar\_retirados_20260819/` | _sin describir_ | 3 | 286 | — |
-| `06_Historico/` | MIA Núcleo — serie larga comparable (anual 2003+, mensual 2020+) con las variables `nucleo: true` de variables.yaml; sus niveles NO coinciden con el índice pleno. | 2 | 190 | **vencida** |
-| `./` | Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa). | 1 | 121 | ok |
+| `06_Historico/` | MIA Núcleo — serie larga comparable (anual 2003+, mensual 2020+) con las variables `nucleo: true` de variables.yaml; sus niveles NO coinciden con el índice pleno. | 2 | 190 | ok |
+| `./` | Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa). | 1 | 122 | **vencida** |
 | `.github\workflows/` | _sin describir_ | 1 | 66 | — |
 
 ## Puntos de entrada
@@ -112,8 +112,8 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 | `01_Poder_Ejecutivo\scraper_16_atn.py` | 382 | 0 | `_mask_fallback_programa19`, `session`, `_to_num`, `atn_anual` |
 | `07_Radar_Nombramientos\radar_nombramientos.py` | 361 | 0 | `normalizar`, `es_candidata`, `_fecha_de_url`, `get_con_reintentos` |
 | `00_Comun\generar_reporte_mensual.py` | 336 | 0 | `fmt`, `signo`, `mes_label`, `graficos` |
+| `02_Poder_Legislativo\scraper_02_calidad_normativa.py` | 295 | 0 | `_usar_almacen_del_sistema`, `session`, `count_presentados`, `_cargar_fallback_hcdn` |
 | `05_Banco_Central\radar_bcra.py` | 284 | 0 | `normaliza`, `get_con_reintentos`, `_fecha_de_url`, `obtener_lista_bora` |
-| `scripts\generar_mapa_modelo.py` | 251 | 0 | `num`, `mes_label`, `leer_frescura`, `leer_valores` |
 
 ## Flujo interno
 
@@ -126,7 +126,8 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
 - `output/_alertas_validacion.md` + `output/mia_reporte.md` (5 commits)
-- `.mapa/mapa.json` + `MAPA.md` (3 commits)
+- `.mapa/mapa.json` + `MAPA.md` (4 commits)
+- `01_Poder_Ejecutivo/BITACORA.md` + `01_Poder_Ejecutivo/scraper_16_atn.py` (3 commits)
 - `01_Poder_Ejecutivo/BITACORA.md` + `AGENTS.md` (3 commits)
 - `00_Comun/BITACORA.md` + `output/_alertas_validacion.md` (3 commits)
 - `00_Comun/BITACORA.md` + `05_Banco_Central/BITACORA.md` (3 commits)
@@ -134,7 +135,6 @@ Segun el historial de git. Si vas a cambiar uno, mira el otro.
 - `AGENTS.md` + `output/_alertas_validacion.md` (3 commits)
 - `correr_mensual.sh` + `output/_alertas_validacion.md` (3 commits)
 - `03_Poder_Judicial/BITACORA.md` + `output/itr_reporte.md` (3 commits)
-- `07_Radar_Nombramientos/LEEME.md` + `07_Radar_Nombramientos/radar_nombramientos.py` (3 commits)
 
 ## Fuentes externas
 
@@ -146,10 +146,10 @@ Segun el historial de git. Si vas a cambiar uno, mira el otro.
 - `monitoreo.fopea.org` — `04_Prensa_Institucional\scraper_13_prensa_causas.py`, `04_Prensa_Institucional\scraper_22_acceso_prensa.py`
 - `opc.gob.ar` — `01_Poder_Ejecutivo\scraper_04_discrecionalidad.py`
 - `descarga.aaip.gob.ar` — `01_Poder_Ejecutivo\scraper_11_transparencia_v2.py`
+- `datos.hcdn.gob.ar` — `02_Poder_Legislativo\scraper_02_calidad_normativa.py`
 - `senado.gob.ar` — `02_Poder_Legislativo\scraper_03_eficacia_control.py`
 - `csjn.gov.ar` — `03_Poder_Judicial\scraper_06_resolucion_csjn.py`
 - `mpf.gob.ar` — `03_Poder_Judicial\scraper_10_integridad.py`
-- `argentina.gob.ar` — `03_Poder_Judicial\scraper_10_integridad.py`
 
 ## Configuracion requerida
 
@@ -157,5 +157,5 @@ Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
 ## Frescura
 
-- Bitacoras vencidas: `00_Comun/`, `02_Poder_Legislativo/`, `03_Poder_Judicial/`, `04_Prensa_Institucional/`, `05_Banco_Central/`, `06_Historico/`, `07_Radar_Nombramientos/`, `scripts/`
+- Bitacoras vencidas: `./`, `00_Comun/`, `03_Poder_Judicial/`, `04_Prensa_Institucional/`, `05_Banco_Central/`, `07_Radar_Nombramientos/`, `scripts/`
 - Carpetas sin bitacora: `archivos_borrar\_retirados_20260819/`

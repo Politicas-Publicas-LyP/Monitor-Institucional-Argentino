@@ -52,6 +52,21 @@ THROTTLE = 2.5
 TIPOS_SIMBOLICOS = ["declaracion", "resolucion", "comunicacion"]
 TOTAL_RE = re.compile(r"([\d.]+)\s+Proyectos?\s+Encontrados", re.IGNORECASE)
 
+# FALLBACK (2026-09-18): cuando el buscador de HCDN falla una celda (tipo, mes) —el
+# escenario que motivó este fallback, "el buscador de HCDN es frágil"— se prueba el
+# dataset oficial de Datos Abiertos de la propia HCDN (Dirección de Información
+# Parlamentaria), bulk CSV en vez de una consulta POST por mes×tipo. Verificado
+# 2026-09-18: cubre RESOLUCION y DECLARACION por `PUBLICACION_FECHA` desde 2008-03,
+# actualizado eventualmente (última carga vista: 2026-09-11). OJO: esta fuente NO
+# distingue "comunicación" como TIPO propio (son ~10% del total simbólico visto en
+# la caché histórica) — el fallback sólo cubre resolución+declaración, así que un
+# mes resuelto por fallback queda LEVEMENTE subcontado en n_simbolicas_pres. Se
+# prefiere esto a un mes directamente SIN DATO cuando el buscador está caído.
+HCDN_DATOS_ABIERTOS_URL = ("https://datos.hcdn.gob.ar/dataset/839441fc-1b5c-45b8-82c9-8b0f18ac7c9b/"
+                           "resource/22b2d52c-7a0e-426b-ac0a-a3326c388ba6/download/"
+                           "proyectos_parlamentarios2.5.csv")
+TIPO_FALLBACK_MAP = {"RESOLUCION": "resolucion", "DECLARACION": "declaracion"}  # sin "comunicacion"
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-7s | %(message)s",
                     datefmt="%H:%M:%S")
 log = logging.getLogger("calidad_normativa")
@@ -119,6 +134,30 @@ def count_presentados(s: requests.Session, tipo: str, desde: str, hasta: str):
         return None
 
 
+def _cargar_fallback_hcdn(s: requests.Session) -> dict[tuple[str, str], int] | None:
+    """Baja el dataset de Datos Abiertos de HCDN y arma {(tipo, 'AAAA-MM'): conteo} para
+    RESOLUCION/DECLARACION. Se llama sólo si hace falta (alguna celda primaria falló);
+    no se cachea en disco (es un CSV completo de ~30MB, se relee fresco cada vez que se
+    necesita, que en la práctica es raro — el buscador de HCDN funciona la mayoría de
+    las corridas). Devuelve None si la descarga o el parseo fallan."""
+    try:
+        resp = s.get(HCDN_DATOS_ABIERTOS_URL, timeout=180)
+        resp.raise_for_status()
+    except Exception as e:  # noqa: BLE001
+        log.warning("Fallback HCDN Datos Abiertos: no se pudo descargar (%s).", type(e).__name__)
+        return None
+    try:
+        df = pd.read_csv(pd.io.common.BytesIO(resp.content), dtype=str,
+                         usecols=["PUBLICACION_FECHA", "TIPO"], on_bad_lines="skip", low_memory=False)
+        df = df[df["TIPO"].isin(TIPO_FALLBACK_MAP)]
+        df["periodo"] = pd.to_datetime(df["PUBLICACION_FECHA"], errors="coerce").dt.to_period("M").astype(str)
+        conteo = df.groupby(["TIPO", "periodo"]).size()
+        return {(TIPO_FALLBACK_MAP[tipo], per): int(n) for (tipo, per), n in conteo.items()}
+    except Exception as e:  # noqa: BLE001
+        log.warning("Fallback HCDN Datos Abiertos: no se pudo parsear (%s).", type(e).__name__)
+        return None
+
+
 # --------------------------------------------------------------------------- #
 class Cache:
     def __init__(self, path: Path):
@@ -152,6 +191,8 @@ def harvest_simbolicos(periods, cache: Cache) -> pd.DataFrame:
     data = {t: [] for t in TIPOS_SIMBOLICOS}
     total = len(periods) * len(TIPOS_SIMBOLICOS)
     i = 0
+    fallback: dict | None = None   # lazy: sólo se baja si el buscador falla una celda
+    fallback_usado = 0
     # El mes EN CURSO nunca se cachea: su conteo es parcial y, si se guardara, quedaría
     # congelado para siempre (aun después de cerrar el mes). Se re-consulta en cada corrida.
     mes_actual = pd.Period(datetime.now().strftime("%Y-%m"), freq="M")
@@ -166,6 +207,16 @@ def harvest_simbolicos(periods, cache: Cache) -> pd.DataFrame:
             val = None if en_curso else cache.get(key)
             if val is None:
                 val = count_presentados(s, t, desde, hasta)
+                if val is None and t in TIPO_FALLBACK_MAP.values():
+                    if fallback is None:
+                        log.warning("Buscador de HCDN falló en %s/%s → probando fallback "
+                                    "Datos Abiertos de HCDN.", t, p)
+                        fallback = _cargar_fallback_hcdn(s) or {}
+                    if (t, str(p)) in fallback:
+                        val = fallback[(t, str(p))]
+                        fallback_usado += 1
+                        log.warning("  %s %s: resuelto por fallback (%s) — subcuenta sin "
+                                    "'comunicación', no aplica a este tipo.", t, p, val)
                 if not en_curso:          # solo se persisten meses ya cerrados
                     cache.set(key, val)
                     if i % 10 == 0:
@@ -174,6 +225,9 @@ def harvest_simbolicos(periods, cache: Cache) -> pd.DataFrame:
                 time.sleep(THROTTLE)
             data[t].append(val)
     cache.save()
+    if fallback_usado:
+        log.warning("Fallback de Datos Abiertos usado en %s celdas (resolución/declaración "
+                    "solamente).", fallback_usado)
     idx = [str(p) for p in periods]
     return pd.DataFrame({f"n_{t}_pres": data[t] for t in TIPOS_SIMBOLICOS}, index=idx)
 

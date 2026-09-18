@@ -1,9 +1,11 @@
 """
-MIA — Exportador de la serie histórica larga (2020 →)
-=====================================================
+MIA — Exportador de la serie histórica larga
+=============================================
 Arma un Excel único con TODA la historia disponible del Monitor, para consulta y difusión:
 
-  Hoja "MIA Nucleo mensual"  -> serie comparable de fondo, 2020-01 en adelante (MIA Núcleo + 5 ejes).
+  Hoja "MIA Nucleo mensual"  -> serie comparable de fondo, desde el inicio disponible del CSV
+                                (hoy 2015-01, corrido así a propósito para cubrir Macri completo;
+                                ver 06_Historico/mia_nucleo_mensual.py --desde) (MIA Núcleo + 5 ejes).
   Hoja "MIA Nucleo anual"    -> misma serie en frecuencia anual (si existe).
   Hoja "MIA pleno mensual"   -> índice pleno de 18 variables + 5 ejes (publicado desde 2024-01),
                                 con la marca provisional/cerrado del histórico maestro.
@@ -12,10 +14,11 @@ Arma un Excel único con TODA la historia disponible del Monitor, para consulta 
 
 Por qué dos series: el MIA pleno usa 18 variables y arranca en 2024-01 (con colchón 2023 para el
 suavizado de 12 meses); hacia atrás no todas las fuentes existen. El MIA Núcleo aplica el mismo
-método al subconjunto de variables con dato consistente desde 2020, así que es comparable en el
-largo plazo pero sus niveles NO coinciden con los del índice pleno.
+método al subconjunto de variables con dato consistente desde el inicio que se le pida a
+mia_nucleo_mensual.py (Judicial recién se suma desde 2017, por eso ejes_cubiertos baja a 4 antes),
+así que es comparable en el largo plazo pero sus niveles NO coinciden con los del índice pleno.
 
-Salida: Documentos/MIA — Serie histórica 2020-<último año>.xlsx
+Salida: Documentos/MIA — Serie histórica <año inicio>-<último año>.xlsx (los años salen del propio CSV).
 Uso:    py 00_Comun/exportar_serie_historica.py
 """
 from __future__ import annotations
@@ -91,11 +94,14 @@ def main() -> int:
         log.error("No hay series para exportar."); return 1
 
     # 5) Notas
+    nucleo_m = hojas.get("MIA Nucleo mensual")
+    anio_inicio_nucleo = str(nucleo_m["periodo"].iloc[0])[:4] if nucleo_m is not None and "periodo" in nucleo_m.columns else "?"
     hojas["Notas"] = pd.DataFrame({
         "Serie": ["MIA Núcleo (mensual/anual)", "MIA pleno (mensual)", "Variables", "Escala", "Estados"],
         "Descripción": [
-            "Serie comparable de largo plazo desde 2020: mismo método aplicado al subconjunto de variables "
-            "con dato consistente. Sirve para comparar gestiones; sus niveles NO coinciden con el índice pleno.",
+            f"Serie comparable de largo plazo desde {anio_inicio_nucleo}: mismo método aplicado al subconjunto "
+            "de variables con dato consistente. Sirve para comparar gestiones; sus niveles NO coinciden con "
+            "el índice pleno. El eje Judicial recién entra desde 2017 (antes ejes_cubiertos=4).",
             "Índice pleno de 18 variables en 5 ejes (Ejecutivo 30%, Legislativo 20%, Judicial 20%, Prensa 15%, "
             "Banco Central 15%). Publicado desde enero de 2024 (calculado con colchón desde 2023).",
             "Las 18 variables que componen el índice pleno, ya normalizadas (0-100) por anclaje al ideal.",
@@ -107,7 +113,8 @@ def main() -> int:
     DOCS.mkdir(exist_ok=True)
     ultimo = hojas.get("MIA pleno mensual", hojas.get("MIA Nucleo mensual"))
     anio_fin = str(ultimo["periodo"].iloc[-1])[:4] if "periodo" in ultimo.columns else ""
-    out_xlsx = DOCS / f"MIA — Serie histórica 2020-{anio_fin}.xlsx"
+    anio_inicio = anio_inicio_nucleo if anio_inicio_nucleo != "?" else "2020"
+    out_xlsx = DOCS / f"MIA — Serie histórica {anio_inicio}-{anio_fin}.xlsx"
     with pd.ExcelWriter(out_xlsx, engine="openpyxl") as xw:
         for nombre, d in hojas.items():
             d.to_excel(xw, sheet_name=nombre[:31], index=False)

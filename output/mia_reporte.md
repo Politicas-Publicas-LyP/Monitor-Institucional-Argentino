@@ -4,7 +4,7 @@
 
 ## MIA actual: **54.8** (2026-08)
 
-Al inicio del periodo (2024-01) era 49.5; variacion de **+5.3** puntos.
+Al inicio del periodo (2024-01) era 51.1; variacion de **+3.7** puntos.
 
 ## Sub-indices por poder (ultimo mes)
 
@@ -32,7 +32,7 @@ Al inicio del periodo (2024-01) era 49.5; variacion de **+5.3** puntos.
 | Escrutinio Abierto | Prensa | 6% | 100.0 |
 | Pauta Publicitaria | Prensa | 5% | 99.9 |
 | Causas contra periodistas | Prensa | 4% | 0.0 |
-| Medios estatales | Prensa | 4% | 71.7 |
+| Medios estatales | Prensa | 4% | 71.8 |
 | Acceso de la prensa | Prensa | 4% | 64.4 |
 | Financiamiento al Tesoro | Banco Central | 6% | 87.1 |
 | Letras intransferibles | Banco Central | 5% | 62.3 |
@@ -43,9 +43,9 @@ Al inicio del periodo (2024-01) era 49.5; variacion de **+5.3** puntos.
 
 | Periodo | MIA |
 |---|---|
-| 2024-03 | 46.7 |
-| 2024-06 | 47.0 |
-| 2024-09 | 52.1 |
+| 2024-03 | 48.1 |
+| 2024-06 | 47.4 |
+| 2024-09 | 52.0 |
 | 2024-12 | 52.5 |
 | 2025-03 | 51.7 |
 | 2025-06 | 51.2 |
