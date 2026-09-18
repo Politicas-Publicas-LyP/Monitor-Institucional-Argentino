@@ -55,9 +55,46 @@ MES_COL = "impacto_presupuestario_mes"
 PATRON = re.compile(r"aportes?\s+(?:no\s+reintegrables\s+)?del\s+tesoro(?:\s+nacional)?",
                     re.IGNORECASE)
 
+# FALLBACK por código de estructura programática (2026-09-18): en 2003-2016 el ATN no lleva
+# ninguna etiqueta de texto reconocible por PATRON (confirmado con --diagnostico en varios
+# años) — pero SIEMPRE vive en Jurisdicción 30 (Ministerio del Interior, con sus distintos
+# nombres: "y Transporte", "Obras Públicas y Vivienda", etc.) → Programa 19, estable 2003-2024.
+# Dentro de ese programa, la actividad de mayor devengado es el ATN en el 88%-100% del
+# programa en los 14 años 2003-2016 (nunca ambiguo en esa ventana). Validado contra una fuente
+# independiente: el Informe 78 de Jefatura de Gabinete al Congreso (15/09/2010) reporta
+# "TOTAL DISTRIBUIDO A LAS PROVINCIAS EN 2010 = $215.705.000" con desglose por provincia que
+# coincide fila por fila (varias provincias con match exacto) con esta actividad en el ZIP
+# crudo de DGSIAF 2010. NO se usa como identificación primaria: el código de jurisdicción SÍ
+# se movió (Interior fue absorbido por Jefatura de Gabinete en 2025) mientras que la etiqueta
+# de texto sobrevivió esa reorganización sin cambios — por eso el texto manda cuando existe, y
+# esto es solo el respaldo para cuando no existe.
+JURISDICCION_ATN_FALLBACK = "30"
+PROGRAMA_ATN_FALLBACK = "19"
+DOMINANCIA_MINIMA_FALLBACK = 0.70  # por debajo de esto, no confiar en el fallback sin revisión humana
+ID_COLS_FALLBACK = ["jurisdiccion_id", "programa_id", "actividad_id"]
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)-7s | %(message)s",
                     datefmt="%H:%M:%S")
 log = logging.getLogger("atn")
+
+
+def _mask_fallback_programa19(df: pd.DataFrame) -> tuple[pd.Series | None, float]:
+    """Máscara de la actividad de mayor devengado dentro de Jurisdicción 30 / Programa 19 (ver
+    nota arriba). Devuelve (None, 0.0) si ese programa no está en el ejercicio."""
+    if not all(c in df.columns for c in ID_COLS_FALLBACK):
+        return None, 0.0
+    base = (df["jurisdiccion_id"].astype(str) == JURISDICCION_ATN_FALLBACK) & \
+           (df["programa_id"].astype(str) == PROGRAMA_ATN_FALLBACK)
+    if not base.any():
+        return None, 0.0
+    por_actividad = df.loc[base].groupby("actividad_id")["dev"].sum()
+    total = por_actividad.sum()
+    if por_actividad.empty or total <= 0:
+        return None, 0.0
+    top_id = por_actividad.idxmax()
+    share = por_actividad.max() / total
+    mask = base & (df["actividad_id"].astype(str) == str(top_id))
+    return mask, share
 
 
 def session() -> requests.Session:
@@ -110,8 +147,9 @@ def atn_anual(anio: int, s: requests.Session) -> dict | None:
     if DEV_COL not in header.columns:
         log.error("DGSIAF %s: no está la columna %s. Columnas: %s", anio, DEV_COL, list(header.columns))
         return None
-    use = list(dict.fromkeys(desc_cols + [DEV_COL]))
-    df = pd.read_csv(io.BytesIO(raw), usecols=use, dtype=str, low_memory=False)
+    use = list(dict.fromkeys(desc_cols + ID_COLS_FALLBACK + [DEV_COL]))
+    df = pd.read_csv(io.BytesIO(raw), usecols=[c for c in use if c in header.columns],
+                     dtype=str, low_memory=False)
 
     df["dev"] = _to_num(df[DEV_COL])
     # 2) máscara ATN: cualquier columna de descripción contiene "aportes del tesoro nacional"
@@ -122,7 +160,6 @@ def atn_anual(anio: int, s: requests.Session) -> dict | None:
         if m.any():
             mask |= m
             hit_cols[c] = sorted(df.loc[m, c].dropna().unique())[:6]
-    atn = df.loc[mask, "dev"].sum()
     tot = df["dev"].sum()
     if tot <= 0:
         return None
@@ -130,12 +167,24 @@ def atn_anual(anio: int, s: requests.Session) -> dict | None:
     # SIN DATO ≠ CERO. Si NINGUNA fila del año matchea la etiqueta, no es que el ATN haya
     # sido cero: es que en ese ejercicio se llama de otro modo. Devolver 0,0 lo haría pasar
     # por "ATN nulo" = institucionalidad IDEAL, y además quedaba cacheado como definitivo
-    # (así se llenaron de ceros 2003–2016). Ahora se reporta SIN DATO y no se cachea.
+    # (así se llenaron de ceros 2003–2016). Antes de rendirse, se prueba el fallback por
+    # código de estructura programática (Jurisdicción 30 / Programa 19, ver nota arriba).
     if int(mask.sum()) == 0:
-        log.error("DGSIAF %s: 0 filas matchean la etiqueta ATN sobre un devengado total de "
-                  "%.0f → SIN DATO (no es cero). Correr `--diagnostico %s` para ver cómo se "
-                  "etiqueta el ATN en ese ejercicio.", anio, tot, anio)
-        return None
+        fb_mask, fb_share = _mask_fallback_programa19(df)
+        if fb_mask is not None and fb_share >= DOMINANCIA_MINIMA_FALLBACK:
+            mask = fb_mask
+            act_desc = next((df.loc[mask, c].dropna().iloc[0] for c in desc_cols
+                              if c.startswith("actividad") and mask.any() and df.loc[mask, c].notna().any()), "?")
+            log.warning("DGSIAF %s: etiqueta de texto ATN no matchea → fallback Jurisdicción "
+                        "%s/Programa %s, actividad '%s' (%.0f%% del programa).",
+                        anio, JURISDICCION_ATN_FALLBACK, PROGRAMA_ATN_FALLBACK, act_desc, fb_share * 100)
+        else:
+            log.error("DGSIAF %s: 0 filas matchean la etiqueta ATN sobre un devengado total de "
+                      "%.0f, y el fallback de Jurisdicción/Programa no fue concluyente (share=%.0f%%) "
+                      "→ SIN DATO. Correr `--diagnostico %s`.", anio, tot, fb_share * 100, anio)
+            return None
+
+    atn = df.loc[mask, "dev"].sum()
 
     # diagnóstico (clave para validar el filtro en el log local)
     log.info("DGSIAF %s: filas ATN=%d | columnas con match: %s", anio, int(mask.sum()),
@@ -176,20 +225,30 @@ def atn_mensual_share(anio: int, s: requests.Session) -> dict:
     desc_cols = [c for c in header.columns if "desc" in c.lower()]
     if DEV_COL not in header.columns or MES_COL not in header.columns:
         log.error("DGSIAF mensual %s: faltan columnas (%s / %s)", anio, DEV_COL, MES_COL); return {}
-    use = list(dict.fromkeys([MES_COL] + desc_cols + [DEV_COL]))
-    df = pd.read_csv(io.BytesIO(raw), usecols=use, dtype=str, low_memory=False)
+    use = list(dict.fromkeys([MES_COL] + desc_cols + ID_COLS_FALLBACK + [DEV_COL]))
+    df = pd.read_csv(io.BytesIO(raw), usecols=[c for c in use if c in header.columns],
+                     dtype=str, low_memory=False)
     df["mes"] = pd.to_numeric(df[MES_COL], errors="coerce")
     df["dev"] = _to_num(df[DEV_COL])
     mask = pd.Series(False, index=df.index)
     for c in desc_cols:
         mask |= df[c].fillna("").str.contains(PATRON)
     # Igual que en el anual: si el archivo ENTERO no tiene una sola fila de ATN, la etiqueta
-    # cambió → SIN DATO. (Que un MES puntual dé 0 teniendo matches en el año sí es un cero
-    # real: en la era Milei hay meses sin ATN, y ese cero debe publicarse.)
+    # cambió → se prueba el fallback por código (Jurisdicción 30 / Programa 19) antes de rendirse.
+    # (Que un MES puntual dé 0 teniendo matches en el año sí es un cero real: en la era Milei
+    # hay meses sin ATN, y ese cero debe publicarse.)
     if int(mask.sum()) == 0:
-        log.error("DGSIAF mensual %s: 0 filas matchean la etiqueta ATN en todo el ejercicio → "
-                  "SIN DATO (no son ceros). Correr `--diagnostico %s`.", anio, anio)
-        return {}
+        fb_mask, fb_share = _mask_fallback_programa19(df)
+        if fb_mask is not None and fb_share >= DOMINANCIA_MINIMA_FALLBACK:
+            mask = fb_mask
+            log.warning("DGSIAF mensual %s: etiqueta de texto ATN no matchea → fallback "
+                        "Jurisdicción %s/Programa %s (%.0f%% del programa).",
+                        anio, JURISDICCION_ATN_FALLBACK, PROGRAMA_ATN_FALLBACK, fb_share * 100)
+        else:
+            log.error("DGSIAF mensual %s: 0 filas matchean la etiqueta ATN en todo el ejercicio, "
+                      "y el fallback de Jurisdicción/Programa no fue concluyente (share=%.0f%%) "
+                      "→ SIN DATO. Correr `--diagnostico %s`.", anio, fb_share * 100, anio)
+            return {}
     out = {}
     for mes in sorted(int(m) for m in df["mes"].dropna().unique()):
         en_mes = df["mes"] == mes
