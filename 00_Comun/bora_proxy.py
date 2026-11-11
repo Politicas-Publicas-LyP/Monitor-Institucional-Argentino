@@ -30,7 +30,8 @@ import requests
 
 HOST_BORA = "www.boletinoficial.gob.ar"
 LECTORES = [f"lector-{i}" for i in range(1, 17)]   # en las pruebas de 2026-11-11 ~8 de 16 respondían
-LECTORES_POR_URL = 8        # cuántos lectores distintos probar por cada URL
+LECTORES_POR_URL = 16       # prueba TODOS los lectores por URL: la disponibilidad cambia de a ratos (2026-11-11: 8 seguidos
+                            # fallaron en la lista del BORA y minutos después el radar BCRA leyó sin problema)
 TIMEOUT_PROXY = 75          # un lector caído tarda ~40 s en dar 522
 MAX_URLS_FALLIDAS = 2       # tras N URLs sin ningún lector OK se deja de insistir con el proxy
 

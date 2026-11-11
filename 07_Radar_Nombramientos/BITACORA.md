@@ -28,6 +28,7 @@ Resumen: Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces 
 - **Pendientes:** verificar la 1ª corrida real por el proxy (workflow_dispatch) y mirar 2-3 días hábiles; pendiente M3 (alerta de "última fecha escaneada").
 
 ## Registro de cambios
+- 2026-11-11 — Corrida manual #106 (tras el push) falló en «Correr radar»: los lectores 1-8 del proxy dieron 522 en la lista del BORA (racha mala del proxy; el radar BCRA, 4 s después, leyó bien). Fallar avisando funcionó y el workflow igual corrió el paso BCRA y la persistencia. Mejora: `bora_proxy.py` prueba los 16 lectores. Las corridas L-V de 09:30, 12:30 y 16:30 ART reintentan solas.
 - 2026-11-11 — **Fallar avisando también con fichas ilegibles.** Primera corrida real por el proxy: leyó la lista
   (70 normas) pero una ficha candidata no conectó en ningún lector y el radar igual dijo «Sin novedades».
   Ahora `obtener_texto_norma` devuelve `None` si no pudo LEER la ficha; el radar lista las fichas sin leer, NO concluye

@@ -1,6 +1,6 @@
 # Bitácora — Común / Ensamblado
 
-<!-- huella: 3c4f1438757f -->
+<!-- huella: 613bfecc66c6 -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -79,6 +79,7 @@ Resumen: Motor del índice — ensamblador, variables.yaml (fuente única de var
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — `bora_proxy.py`: ahora prueba los 16 lectores por URL (antes 8). En la 1ª corrida manual tras el push, los lectores 1-8 dieron 522 en la lista del BORA (el radar falló avisando, bien) y 4 s después el radar BCRA leyó sin problema: la disponibilidad del proxy es por rachas. El `--test` sigue 5/5.
 - 2026-11-11 — Nuevo `generar_panorama.py`: imagen-resumen mensual (`Documentos/MIA — Panorama (<Mes> <Año>).png`) desde `mia_historico.csv` (meses cerrados congelados; el mes en curso, provisional con punto hueco). Mismo estilo/paleta que `graficar_mia.py` y logo LyP. Lo corre `correr_mensual.bat`/`.sh` al final. Los pesos de los ejes están en el script (si cambian en `variables.yaml`, actualizarlos ahí). Base de las futuras cargas.
 - 2026-11-11 — `generar_reporte_mensual.py`: los meses CERRADOS salen de `mia_historico.csv` (congelado, ADR 0004) y no de un recálculo de `mia_mensual.csv`. Antes el reporte de sep decía «baja −0,22 respecto de Agosto (54,88)» cuando el agosto publicado es 54,80 (−0,15): el colchón 2022 movió los meses viejos al recalcular. Afecta también la comparación interanual.
 - 2026-11-11 — `generar_reporte_mensual.py`: el comando de reproducción que imprime el reporte usa `--desde 2022-01` (colchón vigente).
