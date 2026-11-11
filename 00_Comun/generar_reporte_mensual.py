@@ -211,6 +211,13 @@ def main() -> int:
     if (OUT / "mia_historico.csv").exists():
         h = pd.read_csv(OUT / "mia_historico.csv", dtype={"periodo": str}); r = h[h["periodo"] == mes]
         if not r.empty: estado = str(r["estado"].iloc[0])
+        # Los meses CERRADOS valen lo que quedó congelado en el histórico (ADR 0004), no lo que dé un
+        # recálculo posterior de mia_mensual.csv: si no, el reporte compara contra un agosto "54,88"
+        # cuando el publicado es 54,80 (el colchón 2022 mueve los meses viejos al recalcular).
+        hc = h[h["estado"].astype(str) == "cerrado"].set_index("periodo")
+        comunes = [c for c in df.columns if c in hc.columns and c not in ("estado", "actualizado")]
+        for per in hc.index.intersection(df.index):
+            df.loc[per, comunes] = pd.to_numeric(hc.loc[per, comunes], errors="coerce")
     etiqueta = "cierre definitivo" if estado == "cerrado" else "provisional (nowcast)"
 
     y_ = yaml.safe_load(open(BASE / "00_Comun" / "variables.yaml", encoding="utf-8"))
