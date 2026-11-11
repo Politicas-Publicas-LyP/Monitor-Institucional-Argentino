@@ -44,11 +44,13 @@ Resumen: Raíz del repo — orquestadores de la corrida mensual (bat/sh), workfl
 
 ## Proximo paso
 
-Pushear `main` desde GitHub Desktop (las credenciales de Git de esta máquina no tienen permiso de escritura) y, cuando HCDN
-publique su nueva versión, repetir Calidad Normativa y revisar si el fallback de Datos Abiertos sigue vigente — ver
-`02_Poder_Legislativo/BITACORA.md`.
+- **Corrida de noviembre** (cuando cierre el mes): `& .\correr_mensual.bat 2026-11` desde PowerShell. Antes, confirmar que el workflow de radares esté verde.
+- **Informe de la Jefatura de Gabinete del 2026-11-25:** si el Senado no lo lista, cargarlo en `output/informes_jgm_extra.csv` antes de ensamblar (ver `02_Poder_Legislativo/BITACORA.md`).
+- **HCDN:** cuando publique su nueva versión, repetir Calidad Normativa (sep/oct sin dato de proyectos simbólicos; no afecta el valor).
+- **Pendiente de la corrida de sep+oct:** lectura institucional de los reportes (`Documentos/MIA — Prompt lectura institucional.md`) y revisar la baja del Decreto 1066/2026 en `padron_revision.csv`.
 
 ## Registro de cambios
+- 2026-11-11 — Cierre de la corrida sep+oct: el equipo confirmó a mano que no hay designación del Presidente del BCRA ni problemas de acreditación de prensa; `archivos_borrar/` vaciada del disco. Informe de la Jefatura de Gabinete previsto para el 2026-11-25.
 - 2026-11-11 — **Limpieza del repo.** Se sacaron del índice de git 159 `output/*_mensual_<timestamp>.csv` sobrantes (todo menos el último de cada una de las 19 variables, convención de AGENTS.md); quedan en `archivos_borrar/corridas_versionadas_hasta_20260918/` (ignorada) y en el historial de git. Verificado: el ensamblador ve el mismo «último» por patrón y `mia_mensual.csv` sale byte a byte idéntico. Borrada la rama local `fix/atn-bugs-repo-slug-mapa-modelo` (ya mergeada) y los `__pycache__`. Pendiente humano: borrar la rama remota y vaciar `archivos_borrar/` del disco.
 
 - 2026-11-11 — **Corrida mensual de septiembre y octubre 2026 (cierre)** desde esta máquina con IP AR

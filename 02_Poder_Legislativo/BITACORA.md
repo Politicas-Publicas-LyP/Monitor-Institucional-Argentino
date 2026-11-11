@@ -48,6 +48,7 @@ Resumen: Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), efi
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — Eficacia de Control: el próximo informe de la Jefatura de Gabinete está previsto para el **2026-11-25**. Sep y oct quedaron cerrados sin informe nuevo (último: N°145, 2026-04-29), que es lo correcto. Para la corrida de noviembre: si el Senado todavía no lo lista, cargarlo en el suplemento `output/informes_jgm_extra.csv` (columnas `nro,fecha,camara`) antes de ensamblar.
 - 2026-11-11 — **HCDN rediseñó su sitio** (durante la corrida de oct-2026). (1) `scraper_14_sesiones.py` falló con
   `KeyError 'realizada'`: la página /sesiones/ ya no tiene enlaces con `sesion.html` (ahora `../_q/<hash>.html`) y el
   scraper quedó con 0 filas. Reparado: identifica las sesiones por el acordeón `#periodos`, lee `resp.content` (evita el

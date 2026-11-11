@@ -68,6 +68,7 @@ Resumen: Eje Banco Central (15%) — financiamiento al Tesoro y letras intransfe
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — **Confirmación humana de la corrida de sep+oct:** sin designación, renuncia ni fin de mandato del Presidente del BCRA (el radar tampoco detectó eventos entre 2026-06 y 2026-11-11). La variable «Designación Pdte. BCRA» queda sin cambios.
 - 2026-11-11 — `radar_bcra.py`: si no se puede LEER una ficha que menciona al BCRA ya no concluye «sin eventos»: lista las fichas sin leer y sale con exit 1 (reintenta la corrida siguiente).
 - 2026-11-11 — `radar_bcra.py` lee el BORA con `00_Comun/bora_proxy.py` (proxy de Cloudflare): el BORA bloquea a los runners de GitHub desde 2026-10-22. Revisado 2026-09-28..11-11 desde IP argentina: sin eventos de la Presidencia del BCRA (el radar estuvo caído ese período en Actions).
 - 2026-08-19 — `scraper_18_bcra_financiamiento.py` → renombrado **`diagnostico_panhis.py`** y

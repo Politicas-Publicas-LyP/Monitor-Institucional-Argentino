@@ -1,6 +1,6 @@
 # Bitácora — Prensa Institucional
 
-<!-- huella: b6f5b8d65b0e -->
+<!-- huella: 433033b4f503 -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -49,6 +49,7 @@ Resumen: Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficia
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — **Confirmación humana de la corrida de sep+oct:** revisada la tabla de acreditaciones de «Acceso de la prensa»; sin novedades ni problemas nuevos de acreditación. Sin cambios en `ACREDITACIONES`.
 - 2026-08-19 — `scraper_22`: retirado el cartel «PLACEHOLDER / no publicar» y el warning de cada
   corrida — los tramos del cierre (abr-2026) y la reapertura (may-2026) de la sala de prensa ya
   están datados y en producción. La tabla sigue siendo mantenida a mano (human-in-the-loop).
