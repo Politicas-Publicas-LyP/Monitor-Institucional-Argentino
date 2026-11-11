@@ -207,6 +207,7 @@ def harvest_simbolicos(periods, cache: Cache) -> pd.DataFrame:
             val = None if en_curso else cache.get(key)
             if val is None:
                 val = count_presentados(s, t, desde, hasta)
+                por_fallback = False
                 if val is None and t in TIPO_FALLBACK_MAP.values():
                     if fallback is None:
                         log.warning("Buscador de HCDN falló en %s/%s → probando fallback "
@@ -214,10 +215,14 @@ def harvest_simbolicos(periods, cache: Cache) -> pd.DataFrame:
                         fallback = _cargar_fallback_hcdn(s) or {}
                     if (t, str(p)) in fallback:
                         val = fallback[(t, str(p))]
+                        por_fallback = True
                         fallback_usado += 1
                         log.warning("  %s %s: resuelto por fallback (%s) — subcuenta sin "
                                     "'comunicación', no aplica a este tipo.", t, p, val)
-                if not en_curso:          # solo se persisten meses ya cerrados
+                # Solo se persisten meses ya cerrados Y medidos por la fuente principal: un valor
+                # del fallback está SUBCONTADO (sin "comunicación") y, cacheado, quedaría fijo
+                # aunque el buscador de HCDN vuelva a andar. Sin caché, la próxima corrida lo re-consulta.
+                if not en_curso and not por_fallback:
                     cache.set(key, val)
                     if i % 10 == 0:
                         cache.save()

@@ -1,6 +1,6 @@
 # Bitácora — Poder Legislativo
 
-<!-- huella: ddbf6e5be85c -->
+<!-- huella: 55381d4225e1 -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -48,6 +48,7 @@ Resumen: Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), efi
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — Revisión del fallback de Datos Abiertos: un valor resuelto por el fallback (subcontado, sin «comunicación») ya NO se guarda en `_cache_congreso.json`; la próxima corrida lo re-consulta al buscador de HCDN. (Verificado en los logs de las corridas del 17-18/sep que el fallback no llegó a usarse, así que la caché no quedó contaminada.)
 - 2026-09-18 — **Calidad Normativa: fallback a Datos Abiertos de HCDN.** Auditoría de fuentes
   (pedida por el usuario para las 18 variables) encontró que el buscador HTML de HCDN, señalado
   como frágil desde siempre en este código, tiene un reemplazo oficial: `datos.hcdn.gob.ar/dataset/

@@ -1,6 +1,6 @@
 # Bitácora — Común / Ensamblado
 
-<!-- huella: d3581c1f0a6a -->
+<!-- huella: e28096c72868 -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -78,6 +78,7 @@ Resumen: Motor del índice — ensamblador, variables.yaml (fuente única de var
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — `generar_reporte_mensual.py`: el comando de reproducción que imprime el reporte usa `--desde 2022-01` (colchón vigente).
 - 2026-11-11 — Nuevo `bora_proxy.py`: lectura del BORA por el proxy de Cloudflare (`BORA_PROXY_URL`/`BORA_PROXY_TOKEN`), rotando lectores, con lectura directa como último recurso. Lo usan ambos radares. Ver 07_Radar_Nombramientos/BITACORA.md.
 - 2026-08-19 — **Refactor de correspondencias (impacto en el valor: NULO, verificado byte a byte
   sobre `mia_mensual.csv`, `mia_nucleo_mensual.csv` y `mia_nucleo_anual.csv`):**
