@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-11-11 19:08 UTC · 46 archivos · 9,024 LOC -->
+<!-- 2026-11-11 19:13 UTC · 46 archivos · 9,024 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `main` — ultimo commit: 2026-11-11 dfce0e4 GrÃ¡ficos regenerados con la serie publicada (meses cerrados del histÃ³rico) · **hay cambios sin commitear**
+Rama `main` — ultimo commit: 2026-11-11 d3e3941 Panorama mensual: imagen-resumen del monitor como base de las cargas · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -130,16 +130,16 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 
 Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
-- `.mapa/mapa.json` + `MAPA.md` (19 commits)
+- `.mapa/mapa.json` + `MAPA.md` (20 commits)
 - `output/_alertas_validacion.md` + `output/mia_reporte.md` (8 commits)
-- `00_Comun/BITACORA.md` + `00_Comun/generar_reporte_mensual.py` (4 commits)
-- `.mapa/mapa.json` + `output/_alertas_validacion.md` (4 commits)
-- `.mapa/mapa.json` + `output/mia_reporte.md` (4 commits)
-- `01_Poder_Ejecutivo/BITACORA.md` + `AGENTS.md` (4 commits)
-- `03_Poder_Judicial/BITACORA.md` + `output/_alertas_validacion.md` (4 commits)
-- `AGENTS.md` + `output/_alertas_validacion.md` (4 commits)
-- `MAPA.md` + `output/_alertas_validacion.md` (4 commits)
-- `MAPA.md` + `output/mia_reporte.md` (4 commits)
+- `.mapa/mapa.json` + `00_Comun/BITACORA.md` (4 commits)
+- `.mapa/mapa.json` + `AGENTS.md` (4 commits)
+- `.mapa/mapa.json` + `BITACORA.md` (4 commits)
+- `00_Comun/BITACORA.md` + `AGENTS.md` (4 commits)
+- `00_Comun/BITACORA.md` + `MAPA.md` (4 commits)
+- `AGENTS.md` + `MAPA.md` (4 commits)
+- `AGENTS.md` + `correr_mensual.sh` (4 commits)
+- `BITACORA.md` + `MAPA.md` (4 commits)
 
 ## Fuentes externas
 

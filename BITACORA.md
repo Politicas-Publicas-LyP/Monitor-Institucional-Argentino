@@ -49,6 +49,7 @@ publique su nueva versión, repetir Calidad Normativa y revisar si el fallback d
 `02_Poder_Legislativo/BITACORA.md`.
 
 ## Registro de cambios
+- 2026-11-11 — **Limpieza del repo.** Se sacaron del índice de git 159 `output/*_mensual_<timestamp>.csv` sobrantes (todo menos el último de cada una de las 19 variables, convención de AGENTS.md); quedan en `archivos_borrar/corridas_versionadas_hasta_20260918/` (ignorada) y en el historial de git. Verificado: el ensamblador ve el mismo «último» por patrón y `mia_mensual.csv` sale byte a byte idéntico. Borrada la rama local `fix/atn-bugs-repo-slug-mapa-modelo` (ya mergeada) y los `__pycache__`. Pendiente humano: borrar la rama remota y vaciar `archivos_borrar/` del disco.
 
 - 2026-11-11 — **Corrida mensual de septiembre y octubre 2026 (cierre)** desde esta máquina con IP AR
   (`& .\correr_mensual.bat 2026-10`; rango 2022-01..2026-10, publicado desde 2024-01). **MIA sep = 54,66 · oct = 55,47**
