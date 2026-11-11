@@ -1,6 +1,6 @@
 # Bitácora — Común / Ensamblado
 
-<!-- huella: f4194d97a53c -->
+<!-- huella: 3c4f1438757f -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -16,6 +16,7 @@ Resumen: Motor del índice — ensamblador, variables.yaml (fuente única de var
 - el índice dio raro, una variable falta o quedó vieja → `validar.py` + tolerancias en `contracts.yaml` → `output/_alertas_validacion.md`
 - congelar, reabrir o corregir un mes cerrado del histórico (inmutabilidad) → `archivar_historico.py` (`--reabrir AAAA-MM`)
 - el reporte mensual .docx (plantilla LyP, 3 gráficos, tablas) → `generar_reporte_mensual.py`
+- la imagen-resumen del mes para difusión (titular + consolidado + 5 ejes + barras por eje) → `generar_panorama.py` (`--mes AAAA-MM`)
 - descarga compartida de InfoLEG (datos.jus) → `infoleg_source.py` (única copia; la importan los módulos 1, 2 y 4)
 - exportar el Excel de la serie histórica 2020→ → `exportar_serie_historica.py`
 - el radar del BORA no llega desde GitHub Actions (ConnectTimeout) → `bora_proxy.py` (lectura vía Worker de Cloudflare, `--test`; la usan `07_Radar_Nombramientos` y `05_Banco_Central/radar_bcra.py`)
@@ -78,6 +79,7 @@ Resumen: Motor del índice — ensamblador, variables.yaml (fuente única de var
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — Nuevo `generar_panorama.py`: imagen-resumen mensual (`Documentos/MIA — Panorama (<Mes> <Año>).png`) desde `mia_historico.csv` (meses cerrados congelados; el mes en curso, provisional con punto hueco). Mismo estilo/paleta que `graficar_mia.py` y logo LyP. Lo corre `correr_mensual.bat`/`.sh` al final. Los pesos de los ejes están en el script (si cambian en `variables.yaml`, actualizarlos ahí). Base de las futuras cargas.
 - 2026-11-11 — `generar_reporte_mensual.py`: los meses CERRADOS salen de `mia_historico.csv` (congelado, ADR 0004) y no de un recálculo de `mia_mensual.csv`. Antes el reporte de sep decía «baja −0,22 respecto de Agosto (54,88)» cuando el agosto publicado es 54,80 (−0,15): el colchón 2022 movió los meses viejos al recalcular. Afecta también la comparación interanual.
 - 2026-11-11 — `generar_reporte_mensual.py`: el comando de reproducción que imprime el reporte usa `--desde 2022-01` (colchón vigente).
 - 2026-11-11 — Nuevo `bora_proxy.py`: lectura del BORA por el proxy de Cloudflare (`BORA_PROXY_URL`/`BORA_PROXY_TOKEN`), rotando lectores, con lectura directa como último recurso. Lo usan ambos radares. Ver 07_Radar_Nombramientos/BITACORA.md.

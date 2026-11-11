@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-11-11 18:54 UTC · 45 archivos · 8,831 LOC -->
+<!-- 2026-11-11 19:08 UTC · 46 archivos · 9,024 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `main` — ultimo commit: 2026-11-11 e8a0530 Reporte mensual: comparar contra los meses cerrados del histÃ³rico congelado · **hay cambios sin commitear**
+Rama `main` — ultimo commit: 2026-11-11 dfce0e4 GrÃ¡ficos regenerados con la serie publicada (meses cerrados del histÃ³rico) · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -24,6 +24,7 @@ Rama `main` — ultimo commit: 2026-11-11 e8a0530 Reporte mensual: comparar cont
 | el índice dio raro, una variable falta o quedó vieja → `validar.py` + tolerancias en `contracts.yaml` → `output/_alertas_validacion.md` | `00_Comun/` |
 | congelar, reabrir o corregir un mes cerrado del histórico (inmutabilidad) → `archivar_historico.py` (`--reabrir AAAA-MM`) | `00_Comun/` |
 | el reporte mensual .docx (plantilla LyP, 3 gráficos, tablas) → `generar_reporte_mensual.py` | `00_Comun/` |
+| la imagen-resumen del mes para difusión (titular + consolidado + 5 ejes + barras por eje) → `generar_panorama.py` (`--mes AAAA-MM`) | `00_Comun/` |
 | descarga compartida de InfoLEG (datos.jus) → `infoleg_source.py` (única copia; la importan los módulos 1, 2 y 4) | `00_Comun/` |
 | exportar el Excel de la serie histórica 2020→ → `exportar_serie_historica.py` | `00_Comun/` |
 | el radar del BORA no llega desde GitHub Actions (ConnectTimeout) → `bora_proxy.py` (lectura vía Worker de Cloudflare, `--test`; la usan `07_Radar_Nombramientos` y `05_Banco_Central/radar_bcra.py`) | `00_Comun/` |
@@ -72,8 +73,8 @@ Rama `main` — ultimo commit: 2026-11-11 e8a0530 Reporte mensual: comparar cont
 
 | Carpeta | Que es | Arch. | LOC | Bitacora |
 |---|---|---:|---:|---|
+| `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 11 | 1,578 | ok |
 | `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 4 | 1,387 | ok |
-| `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 10 | 1,386 | ok |
 | `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,379 | ok |
 | `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,119 | ok |
 | `04_Prensa_Institucional/` | Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficial, causas judiciales contra periodistas (FOPEA), medios estatales y acceso de la prensa. | 5 | 826 | **vencida** |
@@ -83,20 +84,20 @@ Rama `main` — ultimo commit: 2026-11-11 e8a0530 Reporte mensual: comparar cont
 | `archivos_borrar\_retirados_20260819/` | _sin describir_ | 3 | 286 | — |
 | `06_Historico/` | MIA Núcleo — serie larga comparable (anual 2003+, mensual 2020+) con las variables `nucleo: true` de variables.yaml; sus niveles NO coinciden con el índice pleno. | 2 | 190 | ok |
 | `.github\workflows/` | _sin describir_ | 2 | 126 | — |
-| `./` | Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa). | 1 | 122 | ok |
+| `./` | Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa). | 1 | 123 | ok |
 
 ## Puntos de entrada
 
 - `00_Comun\archivar_historico.py`
 - `00_Comun\bora_proxy.py`
 - `00_Comun\exportar_serie_historica.py`
+- `00_Comun\generar_panorama.py`
 - `00_Comun\generar_reporte_mensual.py`
 - `00_Comun\graficar_mia.py`
 - `00_Comun\icia_ensamblado.py`
 - `00_Comun\validar.py`
 - `01_Poder_Ejecutivo\scraper_01_dnu_leyes.py`
 - `01_Poder_Ejecutivo\scraper_04_discrecionalidad.py`
-- `01_Poder_Ejecutivo\scraper_11_transparencia_v2.py`
 
 ## Archivos centrales
 
@@ -129,7 +130,7 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 
 Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
-- `.mapa/mapa.json` + `MAPA.md` (18 commits)
+- `.mapa/mapa.json` + `MAPA.md` (19 commits)
 - `output/_alertas_validacion.md` + `output/mia_reporte.md` (8 commits)
 - `00_Comun/BITACORA.md` + `00_Comun/generar_reporte_mensual.py` (4 commits)
 - `.mapa/mapa.json` + `output/_alertas_validacion.md` (4 commits)

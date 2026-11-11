@@ -80,6 +80,7 @@ Antes de correr, traer el repo al día (para tomar los CSV puente del radar más
 - `output/_alertas_validacion.md` — alertas de QA (frescura, faltantes, saltos). **Notifica,
   no bloquea.**
 - Gráficos del índice (consolidado, 5 ejes y núcleo).
+- `Documentos/MIA — Panorama (<Mes> <Año>).png` — imagen-resumen del mes (`00_Comun/generar_panorama.py`), con el mes en curso marcado provisional.
 - `output/_corrida_mensual_AAAAMMDD_HHMMSS.log` — log completo de la corrida.
 
 En Linux, el script devuelve **exit ≠ 0 si algún paso falló** (con la cuenta de fallos al

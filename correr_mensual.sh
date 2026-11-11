@@ -107,6 +107,7 @@ fi
 run "$PY" 00_Comun/graficar_mia.py
 run "$PY" 00_Comun/archivar_historico.py   # actualiza el histórico maestro (congela meses cerrados)
 run "$PY" 00_Comun/generar_reporte_mensual.py   # arma el .docx modelo (3 gráficos + tablas + lectura auto)
+run "$PY" 00_Comun/generar_panorama.py   # imagen-resumen del mes (Documentos/MIA — Panorama (<mes>).png)
 
 echo "LISTO. Indice: output/mia_mensual.csv | Historico: output/mia_historico.xlsx | Reporte: Documentos/MIA — Reporte Mensual (<mes>).docx | Alertas QA: output/_alertas_validacion.md" | tee -a "$LOG"
 echo "(El mes en curso sale PROVISIONAL; para el titular cerrado, correr con el mes cerrado: ./correr_mensual.sh AAAA-MM)" | tee -a "$LOG"

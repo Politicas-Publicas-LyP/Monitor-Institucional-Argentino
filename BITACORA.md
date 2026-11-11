@@ -1,6 +1,6 @@
 # Bitácora — Raíz del proyecto
 
-<!-- huella: b4c62b2b395f -->
+<!-- huella: 4edcbef52c13 -->
 
 > **Bitácora de la raíz.** Registrar acá los cambios de orquestación y régimen de trabajo.
 > Antes de editar, hacé *pull*; al terminar, *commit + push* (ver AGENTS.md).
