@@ -55,12 +55,16 @@ Requisitos: `pip install -r 07_Radar_Nombramientos/requirements.txt`
 ### Modo histórico (corrida única de recuperación)
 Lee el BORA **directo por fecha** (sin Vigía): itera día por día de `--desde` a `--hasta`,
 salta fines de semana, y para cada edición filtra candidatas y lee el cuerpo. El append es
-idempotente (dedup por URL): se puede repetir sin duplicar. Funciona desde IP argentina y
-desde GitHub Actions (el BORA responde en ambos).
+idempotente (dedup por URL): se puede repetir sin duplicar. Funciona desde IP argentina (directo)
+y desde GitHub Actions **solo vía el proxy de Cloudflare** (desde 2026-10-22 el BORA no responde a
+las IP de los runners de GitHub).
 
 ## Automatización
 El workflow vive ÚNICAMENTE en la **raíz** del repo (`.github/workflows/radar_nombramientos.yml`);
 GitHub Actions solo ejecuta los que están ahí. No duplicar una copia dentro de esta carpeta.
-Corre L–V 09:30 ART, actualiza y commitea el CSV puente. El BORA es accesible desde IP del exterior (GitHub Actions). Principio rector,
+Corre L–V 09:30, 12:30 y 16:30 ART (el proxy es intermitente; repetir no duplica: dedup por URL),
+actualiza y commitea el CSV puente. El BORA ya NO es accesible desde los runners de GitHub: se lee por el
+proxy de Cloudflare (`00_Comun/bora_proxy.py`, Variable `BORA_PROXY_URL` + Secret `BORA_PROXY_TOKEN`).
+`keepalive.yml` commitea un sello semanal para que GitHub no desactive el cron. Principio rector,
 igual que el otro radar: **fallar avisando**, nunca decir "sin novedades" si no se pudo leer
 el Boletín.

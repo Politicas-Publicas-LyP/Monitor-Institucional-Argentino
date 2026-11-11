@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-08-19 17:22 UTC · 41 archivos · 7,860 LOC -->
+<!-- 2026-11-11 17:51 UTC · 45 archivos · 8,510 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `main` — ultimo commit: 2026-08-18 4fcfcd0 Corrida Julio completo · **hay cambios sin commitear**
+Rama `main` — ultimo commit: 2026-09-28 e917b6b Radares BORA: 2026-09-28 · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -25,6 +25,7 @@ Rama `main` — ultimo commit: 2026-08-18 4fcfcd0 Corrida Julio completo · **ha
 | el reporte mensual .docx (plantilla LyP, 3 gráficos, tablas) → `generar_reporte_mensual.py` | `00_Comun/` |
 | descarga compartida de InfoLEG (datos.jus) → `infoleg_source.py` (única copia; la importan los módulos 1, 2 y 4) | `00_Comun/` |
 | exportar el Excel de la serie histórica 2020→ → `exportar_serie_historica.py` | `00_Comun/` |
+| el radar del BORA no llega desde GitHub Actions (ConnectTimeout) → `bora_proxy.py` (lectura vía Worker de Cloudflare, `--test`; la usan `07_Radar_Nombramientos` y `05_Banco_Central/radar_bcra.py`) | `00_Comun/` |
 | DNU, decretos o leyes; la marca oficial `clase_norma` de InfoLEG → `scraper_01_dnu_leyes.py` | `01_Poder_Ejecutivo/` |
 | presupuesto aprobado vs prórroga, o modificaciones por DA/DNU (OPC) → `scraper_04_discrecionalidad.py` (tabla `PRESUPUESTO_APROBADO`, actualizar cada año) | `01_Poder_Ejecutivo/` |
 | pedidos de acceso a la información, tasa de respuesta o en plazo → `scraper_11_transparencia_v2.py` (fechado por mes de RESOLUCIÓN) | `01_Poder_Ejecutivo/` |
@@ -58,6 +59,7 @@ Rama `main` — ultimo commit: 2026-08-18 4fcfcd0 Corrida Julio completo · **ha
 | recuperar un período pasado del BORA → `--desde/--hasta` (idempotente, dedup por URL) | `07_Radar_Nombramientos/` |
 | qué significa confianza ALTA/MEDIA/BAJA o la columna `confirmado` → `LEEME.md` | `07_Radar_Nombramientos/` |
 | el cron / el workflow de Actions (que corre también el radar BCRA) → `.github/workflows/radar_nombramientos.yml` (vive SOLO en la raíz) | `07_Radar_Nombramientos/` |
+| el radar falla con `ConnectTimeout` / `no se pudo leer el BORA` en Actions → el BORA bloquea runners de GitHub; se lee por el proxy → `00_Comun/bora_proxy.py` (`--test`), Variable `BORA_PROXY_URL`, Secret `BORA_PROXY_TOKEN` | `07_Radar_Nombramientos/` |
 | reindexar el proyecto o sellar una bitácora → `indexar.py` (`python3 scripts/indexar.py .` / `--sellar <carpeta>` / `--estructura`) | `scripts/` |
 | consultar el índice sin abrir archivos → `.mapa/buscar.py` (copiado automáticamente por el indexador) | `scripts/` |
 | automatizar el reindexado en cada commit → `hook-pre-commit` (copiar a `.git/hooks/pre-commit`) | `scripts/` |
@@ -66,22 +68,23 @@ Rama `main` — ultimo commit: 2026-08-18 4fcfcd0 Corrida Julio completo · **ha
 
 | Carpeta | Que es | Arch. | LOC | Bitacora |
 |---|---|---:|---:|---|
+| `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 4 | 1,387 | **vencida** |
+| `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 10 | 1,372 | ok |
 | `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,294 | **vencida** |
-| `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 9 | 1,222 | **vencida** |
 | `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,020 | **vencida** |
-| `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 2 | 933 | **vencida** |
 | `04_Prensa_Institucional/` | Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficial, causas judiciales contra periodistas (FOPEA), medios estatales y acceso de la prensa. | 5 | 826 | **vencida** |
-| `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 802 | **vencida** |
+| `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 797 | **vencida** |
 | `02_Poder_Legislativo/` | Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), eficacia de control (art. 101, informes JGM), costo del Congreso y cumplimiento de sesiones. | 4 | 739 | **vencida** |
-| `07_Radar_Nombramientos/` | Radar del BORA (GitHub Actions, L–V 9:30 ART) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo. | 1 | 361 | **vencida** |
+| `07_Radar_Nombramientos/` | Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces por día) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo. | 1 | 357 | ok |
 | `archivos_borrar\_retirados_20260819/` | _sin describir_ | 3 | 286 | — |
 | `06_Historico/` | MIA Núcleo — serie larga comparable (anual 2003+, mensual 2020+) con las variables `nucleo: true` de variables.yaml; sus niveles NO coinciden con el índice pleno. | 2 | 190 | **vencida** |
 | `./` | Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa). | 1 | 121 | ok |
-| `.github\workflows/` | _sin describir_ | 1 | 66 | — |
+| `.github\workflows/` | _sin describir_ | 2 | 121 | — |
 
 ## Puntos de entrada
 
 - `00_Comun\archivar_historico.py`
+- `00_Comun\bora_proxy.py`
 - `00_Comun\exportar_serie_historica.py`
 - `00_Comun\generar_reporte_mensual.py`
 - `00_Comun\graficar_mia.py`
@@ -90,7 +93,6 @@ Rama `main` — ultimo commit: 2026-08-18 4fcfcd0 Corrida Julio completo · **ha
 - `01_Poder_Ejecutivo\scraper_01_dnu_leyes.py`
 - `01_Poder_Ejecutivo\scraper_04_discrecionalidad.py`
 - `01_Poder_Ejecutivo\scraper_11_transparencia_v2.py`
-- `01_Poder_Ejecutivo\scraper_16_atn.py`
 
 ## Archivos centrales
 
@@ -100,22 +102,24 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 |---|---:|---:|---|
 | `00_Comun\infoleg_source.py` | 91 | 3 | `build_session`, `_get_zip_bytes`, `_read_csv_resilient`, `_prepare_dates` |
 | `00_Comun\icia_ensamblado.py` | 265 | 2 | `_cargar_config`, `cargar_nucleo`, `_latest`, `_col` |
+| `00_Comun\bora_proxy.py` | 150 | 2 | `_proxy_url`, `_es_bora`, `_via_proxy`, `get_bora` |
+| `scripts\mapa_modelo_topologia.py` | 203 | 1 | — |
 | `scripts\indexar.py` | 714 | 0 | `cargar_gitignore`, `ignorado`, `leer`, `git` |
 | `03_Poder_Judicial\padron_judicial.py` | 460 | 0 | `session`, `_read_csv_resilient`, `_snapshot_date`, `_es_jueces` |
 | `03_Poder_Judicial\scraper_05_cobertura_judicial.py` | 422 | 0 | `session`, `_read_csv_resilient`, `_tasa`, `_snapshot_date` |
 | `01_Poder_Ejecutivo\scraper_01_dnu_leyes.py` | 389 | 0 | `DNULeyesScraper`, `main` |
-| `07_Radar_Nombramientos\radar_nombramientos.py` | 361 | 0 | `normalizar`, `es_candidata`, `_fecha_de_url`, `get_con_reintentos` |
+| `07_Radar_Nombramientos\radar_nombramientos.py` | 357 | 0 | `normalizar`, `es_candidata`, `_fecha_de_url`, `get_con_reintentos` |
 | `00_Comun\generar_reporte_mensual.py` | 336 | 0 | `fmt`, `signo`, `mes_label`, `graficos` |
-| `05_Banco_Central\radar_bcra.py` | 284 | 0 | `normaliza`, `get_con_reintentos`, `_fecha_de_url`, `obtener_lista_bora` |
 | `01_Poder_Ejecutivo\scraper_16_atn.py` | 283 | 0 | `session`, `_to_num`, `atn_anual`, `atn_mensual_share` |
-| `02_Poder_Legislativo\scraper_02_calidad_normativa.py` | 241 | 0 | `_usar_almacen_del_sistema`, `session`, `count_presentados`, `Cache` |
-| `03_Poder_Judicial\scraper_06_resolucion_csjn.py` | 221 | 0 | `csjn_miembros`, `session`, `_num`, `parse_anuario` |
+| `05_Banco_Central\radar_bcra.py` | 279 | 0 | `normaliza`, `get_con_reintentos`, `_fecha_de_url`, `obtener_lista_bora` |
 
 ## Flujo interno
 
 - `01_Poder_Ejecutivo/` → `00_Comun/` (2)
 - `06_Historico/` → `00_Comun/` (2)
 - `02_Poder_Legislativo/` → `00_Comun/` (1)
+- `05_Banco_Central/` → `00_Comun/` (1)
+- `07_Radar_Nombramientos/` → `00_Comun/` (1)
 
 ## Se tocan juntos
 
@@ -136,20 +140,22 @@ Segun el historial de git. Si vas a cambiar uno, mira el otro.
 - `boletinoficial.gob.ar` — `05_Banco_Central\radar_bcra.py`, `07_Radar_Nombramientos\radar_nombramientos.py`, `output\bajas_jueces.csv`
 - `dgsiaf-repo.mecon.gob.ar` — `01_Poder_Ejecutivo\scraper_16_atn.py`, `02_Poder_Legislativo\scraper_12_costo_legislativo.py`, `04_Prensa_Institucional\scraper_08_pauta.py`
 - `bcra.gob.ar` — `05_Banco_Central\diagnostico_panhis.py`, `05_Banco_Central\scraper_18_bcra_balance.py`, `archivos_borrar\_retirados_20260819\05_Banco_Central_scraper_18_bcra_financiamiento.py`
+- `bora-proxy-sam.politicaspublicas.workers.dev` — `.github\workflows\radar_nombramientos.yml`, `00_Comun\bora_proxy.py`
 - `hcdn.gob.ar` — `02_Poder_Legislativo\scraper_02_calidad_normativa.py`, `02_Poder_Legislativo\scraper_14_sesiones.py`
 - `monitoreo.fopea.org` — `04_Prensa_Institucional\scraper_13_prensa_causas.py`, `04_Prensa_Institucional\scraper_22_acceso_prensa.py`
+- `proxy.example` — `00_Comun\bora_proxy.py`
 - `opc.gob.ar` — `01_Poder_Ejecutivo\scraper_04_discrecionalidad.py`
 - `descarga.aaip.gob.ar` — `01_Poder_Ejecutivo\scraper_11_transparencia_v2.py`
 - `senado.gob.ar` — `02_Poder_Legislativo\scraper_03_eficacia_control.py`
 - `csjn.gov.ar` — `03_Poder_Judicial\scraper_06_resolucion_csjn.py`
-- `mpf.gob.ar` — `03_Poder_Judicial\scraper_10_integridad.py`
-- `argentina.gob.ar` — `03_Poder_Judicial\scraper_10_integridad.py`
 
 ## Configuracion requerida
 
+- `BORA_PROXY_TOKEN` — `.github\workflows\radar_nombramientos.yml`, `00_Comun\bora_proxy.py`
+- `BORA_PROXY_URL` — `.github\workflows\radar_nombramientos.yml`, `00_Comun\bora_proxy.py`
 - `MIA_RADAR_CSV_URL` — `03_Poder_Judicial\padron_judicial.py`, `03_Poder_Judicial\scraper_05_cobertura_judicial.py`
 
 ## Frescura
 
-- Bitacoras vencidas: `00_Comun/`, `01_Poder_Ejecutivo/`, `02_Poder_Legislativo/`, `03_Poder_Judicial/`, `04_Prensa_Institucional/`, `05_Banco_Central/`, `06_Historico/`, `07_Radar_Nombramientos/`, `scripts/`
-- Carpetas sin bitacora: `archivos_borrar\_retirados_20260819/`
+- Bitacoras vencidas: `01_Poder_Ejecutivo/`, `02_Poder_Legislativo/`, `03_Poder_Judicial/`, `04_Prensa_Institucional/`, `05_Banco_Central/`, `06_Historico/`, `scripts/`
+- Carpetas sin bitacora: `.github\workflows/`, `archivos_borrar\_retirados_20260819/`

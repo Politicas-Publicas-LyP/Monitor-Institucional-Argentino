@@ -1,9 +1,20 @@
 name: Radares BORA (jueces + Presidencia BCRA)
 
+# Desde 2026-10-22 el BORA (www.boletinoficial.gob.ar) no responde a las IP de los runners
+# hospedados por GitHub (ConnectTimeout). Los radares leen el BORA a través del proxy de
+# Cloudflare (00_Comun/bora_proxy.py), el mismo que usa el Radar de Desregulación de LyP.
+# Requiere en el repo (Settings > Secrets and variables > Actions):
+#   Variable  BORA_PROXY_URL    = https://bora-proxy-sam.politicaspublicas.workers.dev/
+#   Secret    BORA_PROXY_TOKEN  = la misma clave cargada como TOKEN en el Worker
+# El proxy es intermitente (algunos "lectores" no conectan), por eso hay VARIOS horarios por
+# día: el radar es idempotente (dedup por URL en los CSV puente), así que repetir no duplica.
+
 on:
   schedule:
-    # 12:30 UTC = 09:30 ART, de lunes a viernes (el BORA ya publicó la 1ra sección).
-    - cron: '30 12 * * 1-5'
+    # lunes a viernes (el BORA publica la 1ra sección temprano). 12:30 UTC = 09:30 ART.
+    - cron: '30 12 * * 1-5'   # 09:30 ART
+    - cron: '30 15 * * 1-5'   # 12:30 ART — reintento si el proxy no conectó
+    - cron: '30 19 * * 1-5'   # 16:30 ART — último intento del día
   workflow_dispatch:
     inputs:
       desde:
@@ -18,9 +29,18 @@ on:
 permissions:
   contents: write   # para commitear el CSV puente actualizado
 
+# Evita que dos corridas pisen el mismo CSV si una se demora.
+concurrency:
+  group: radares-bora
+  cancel-in-progress: false
+
 jobs:
   radar:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      BORA_PROXY_URL: ${{ vars.BORA_PROXY_URL }}
+      BORA_PROXY_TOKEN: ${{ secrets.BORA_PROXY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,6 +52,7 @@ jobs:
         run: |
           python "07_Radar_Nombramientos/radar_nombramientos.py" --test
           python "05_Banco_Central/radar_bcra.py" --test
+          python "00_Comun/bora_proxy.py" --test
       - name: Correr radar
         env:
           DESDE: ${{ github.event.inputs.desde }}
@@ -59,6 +80,7 @@ jobs:
           git add output/nombramientos_jueces.csv output/bajas_jueces.csv output/bcra_presidencia_eventos.csv 2>/dev/null || true
           if [ -n "$(git status --porcelain output/nombramientos_jueces.csv output/bajas_jueces.csv output/bcra_presidencia_eventos.csv)" ]; then
             git commit -m "Radares BORA: $(date -u +%Y-%m-%d)"
+            git pull --rebase origin main
             git push
           else
             echo "Sin cambios en los CSV puente."

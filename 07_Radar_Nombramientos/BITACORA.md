@@ -1,6 +1,6 @@
 # Bitácora — Radar de Nombramientos (BORA)
 
-<!-- huella: ab6da6567c94 -->
+<!-- huella: 9b96343442a2 -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -8,7 +8,7 @@
 
 _Última revisión: 2026-08-19_
 
-Resumen: Radar del BORA (GitHub Actions, L–V 9:30 ART) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo.
+Resumen: Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces por día) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo.
 
 ## Buscar acá si
 
@@ -16,6 +16,7 @@ Resumen: Radar del BORA (GitHub Actions, L–V 9:30 ART) — detecta ALTAS y BAJ
 - recuperar un período pasado del BORA → `--desde/--hasta` (idempotente, dedup por URL)
 - qué significa confianza ALTA/MEDIA/BAJA o la columna `confirmado` → `LEEME.md`
 - el cron / el workflow de Actions (que corre también el radar BCRA) → `.github/workflows/radar_nombramientos.yml` (vive SOLO en la raíz)
+- el radar falla con `ConnectTimeout` / `no se pudo leer el BORA` en Actions → el BORA bloquea runners de GitHub; se lee por el proxy → `00_Comun/bora_proxy.py` (`--test`), Variable `BORA_PROXY_URL`, Secret `BORA_PROXY_TOKEN`
 
 ## Radar de nombramientos — ALTAS y BAJAS  (`radar_nombramientos.py`)
 - **Estado:** OK (test 8/8). Lee el BORA por fecha (/seccion/primera/AAAAMMDD), decide por el
@@ -23,10 +24,16 @@ Resumen: Radar del BORA (GitHub Actions, L–V 9:30 ART) — detecta ALTAS y BAJ
   BAJAS: renuncia / cese / remoción / jubilación / límite de edad / fallecimiento de un juez
   (verificadas en el BORA: decretos 529, 530/2025, etc.). Salida en dos CSV puente.
 - **Fuente:** BORA
-- **Última actualización:** 2026-06-25
-- **Pendientes:** —
+- **Última actualización:** 2026-11-11
+- **Pendientes:** verificar la 1ª corrida real por el proxy (workflow_dispatch) y mirar 2-3 días hábiles; pendiente M3 (alerta de "última fecha escaneada").
 
 ## Registro de cambios
+- 2026-11-11 — **Radar caído desde 2026-10-22**: el BORA dejó de responder a los runners de GitHub
+  (ConnectTimeout en los 4 reintentos; 14 corridas fallidas seguidas, último commit de radares 2026-09-28).
+  Fix: `00_Comun/bora_proxy.py` (lectura por el Worker de Cloudflare `bora-proxy-sam`, rotando lectores, con
+  lectura directa como último recurso), usado por ambos radares; workflow con 3 horarios diarios + `keepalive.yml`.
+  Hueco recuperado a mano desde IP argentina (`--desde 2026-09-28 --hasta 2026-11-11`): 1 alta
+  (Decreto 1343/2026, 2026-11-11), 0 bajas, 0 eventos BCRA. Se descartó un runner self-hosted (la PC no está prendida todos los días).
 - 2026-08-19 — El workflow de Actions ahora corre PRIMERO los `--test` de ambos radares
   (8/8 y 7/7, sin red) como regresión: si una edición rompe la detección, el run falla antes
   de escanear el BORA.

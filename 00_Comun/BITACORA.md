@@ -1,6 +1,6 @@
 # Bitácora — Común / Ensamblado
 
-<!-- huella: 489428da0445 -->
+<!-- huella: d3581c1f0a6a -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -18,6 +18,7 @@ Resumen: Motor del índice — ensamblador, variables.yaml (fuente única de var
 - el reporte mensual .docx (plantilla LyP, 3 gráficos, tablas) → `generar_reporte_mensual.py`
 - descarga compartida de InfoLEG (datos.jus) → `infoleg_source.py` (única copia; la importan los módulos 1, 2 y 4)
 - exportar el Excel de la serie histórica 2020→ → `exportar_serie_historica.py`
+- el radar del BORA no llega desde GitHub Actions (ConnectTimeout) → `bora_proxy.py` (lectura vía Worker de Cloudflare, `--test`; la usan `07_Radar_Nombramientos` y `05_Banco_Central/radar_bcra.py`)
 
 ## Ensamblador  (`icia_ensamblado.py`)
 - **Estado:** OK. Lee variables.yaml; anclaje al ideal, suavizado 12m, arrastre y carryover; renormaliza por categoría sobre variables disponibles. Los ESTADOS (`sin_suavizar`) persisten por ffill: no se caen de la renormalización en meses sin fila nueva.
@@ -77,6 +78,7 @@ Resumen: Motor del índice — ensamblador, variables.yaml (fuente única de var
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — Nuevo `bora_proxy.py`: lectura del BORA por el proxy de Cloudflare (`BORA_PROXY_URL`/`BORA_PROXY_TOKEN`), rotando lectores, con lectura directa como último recurso. Lo usan ambos radares. Ver 07_Radar_Nombramientos/BITACORA.md.
 - 2026-08-19 — **Refactor de correspondencias (impacto en el valor: NULO, verificado byte a byte
   sobre `mia_mensual.csv`, `mia_nucleo_mensual.csv` y `mia_nucleo_anual.csv`):**
   (a) nuevo `cargar_nucleo()` en `icia_ensamblado.py` + claves `nucleo_comp` en `variables.yaml`:

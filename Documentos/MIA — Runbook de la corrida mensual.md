@@ -12,8 +12,9 @@ _Última revisión: 2026-07-06_
 Dos piezas independientes, con requisitos de red distintos:
 
 - **Radares del BORA** (jueces altas/bajas + Presidencia BCRA). Ya corren solos en
-  **GitHub Actions** (L–V 09:30 ART) y dejan sus CSV puente en el repo. El BORA es
-  accesible desde el exterior, por eso viven en la nube. **No forman parte de esta
+  **GitHub Actions** (L–V, 3 horarios) y dejan sus CSV puente en el repo. Desde 2026-10-22
+  el BORA no responde a las IP de los runners de GitHub, así que lo leen por el **proxy de
+  Cloudflare** (`00_Comun/bora_proxy.py`; `BORA_PROXY_URL` + `BORA_PROXY_TOKEN`). **No forman parte de esta
   corrida**: la corrida mensual los *lee* del repo.
 - **Corrida mensual (dato duro → índice)**. Todo lo demás: scrapers de las 18 variables,
   padrón judicial, ensamblado, QA y gráficos. **Requiere IP argentina.**
@@ -26,7 +27,7 @@ runners cloud del exterior** (GitHub Actions, VM en el extranjero): tiene que ej
 en una máquina/servidor con **egress con IP argentina**. `apis.datos.gob.ar` (recaudación)
 sí responde afuera, pero es la excepción.
 
-> El único que sortea esto es el radar del BORA, porque el BORA no discrimina por IP.
+> El radar del BORA lo sortea con el proxy de Cloudflare (el BORA dejó de responder a los runners de GitHub el 2026-10-22). Antes de cada corrida mensual conviene revisar que el workflow de radares esté verde: si falló varios días, los CSV puente quedan viejos.
 
 ## 2. El comando único
 

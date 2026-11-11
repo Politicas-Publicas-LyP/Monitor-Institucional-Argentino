@@ -32,6 +32,9 @@ from pathlib import Path
 
 import requests
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "00_Comun"))
+from bora_proxy import get_bora  # noqa: E402  (lectura del BORA directa o vía proxy)
+
 URL_BORA_BASE = "https://www.boletinoficial.gob.ar"
 URL_PRIMERA = f"{URL_BORA_BASE}/seccion/primera"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -62,16 +65,8 @@ def normaliza(t: str) -> str:
 
 
 def get_con_reintentos(url, timeout=30, intentos=4, espera=8):
-    for i in range(1, intentos + 1):
-        try:
-            r = requests.get(url, headers=HEADERS, timeout=timeout)
-            if r.status_code < 500:
-                return r
-        except requests.exceptions.RequestException as e:
-            print(f"  red {i}/{intentos}: {e}")
-        if i < intentos:
-            time.sleep(espera)
-    return None
+    # Directo, o vía el proxy de Cloudflare si BORA_PROXY_URL está definida (00_Comun/bora_proxy.py).
+    return get_bora(url, HEADERS, timeout=timeout, intentos=intentos, espera=espera)
 
 
 def _fecha_de_url(url: str):

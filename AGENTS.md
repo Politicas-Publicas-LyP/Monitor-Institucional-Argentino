@@ -133,8 +133,11 @@ Decide leyendo el CUERPO del decreto (el título del enlace no trae el dato).
   MEDIA/BAJA quedan para revisión humana. La columna opcional `confirmado` permite forzar
   la confirmación o el descarte humano de una fila.
 - Automatización: `.github/workflows/radar_nombramientos.yml` (L–V 09:30 ART) corre los **tres
-  radares** (altas y bajas judiciales + Presidencia BCRA) y commitea sus CSV puente. El BORA es
-  accesible desde IP del exterior (GitHub Actions). Principio: **fallar avisando**, nunca "sin
+  radares** (altas y bajas judiciales + Presidencia BCRA) y commitea sus CSV puente. **Desde
+  2026-10-22 el BORA no responde a las IP de los runners de GitHub** (ConnectTimeout): los radares
+  lo leen por el proxy de Cloudflare (`00_Comun/bora_proxy.py`; Variable `BORA_PROXY_URL` + Secret
+  `BORA_PROXY_TOKEN` del repo; rota "lectores" porque el proxy es intermitente, por eso el workflow
+  corre 3 veces por día y `keepalive.yml` evita que GitHub apague el cron). Principio: **fallar avisando**, nunca "sin
   novedades" si no se pudo leer el Boletín. El workflow vive SOLO en la raíz del repo.
 
 ## Padrón judicial vivo (03_Poder_Judicial/padron_judicial.py)
