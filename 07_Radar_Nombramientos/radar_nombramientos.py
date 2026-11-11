@@ -57,7 +57,8 @@ DELAY_DIA = 0.4      # pausa entre días en el modo histórico
 # --- Detección de designaciones de JUECES TITULARES (sobre el cuerpo de la norma) ---
 VERBO  = re.compile(r"\b(DESIGNA|DESIGNASE|DESIGNANSE|NOMBRA|NOMBRASE|NOMBRANSE|DESIGNAR|DESIGNACION)\b")
 JUEZ   = re.compile(r"\b(JUEZ|JUEZA|JUECES|MAGISTRAD\w*|CAMARISTA|VOCAL DE LA CAMARA)\b")
-ORGANO = re.compile(r"(JUZGADO[^,.;]{0,90}|CAMARA (?:FEDERAL|NACIONAL)[^,.;]{0,90}|TRIBUNAL ORAL[^,.;]{0,90})")
+ORGANO = re.compile(r"(JUZGADO[^,.;]{0,90}|CAMARA (?:FEDERAL|NACIONAL)[^,.;]{0,90}|TRIBUNAL ORAL[^,.;]{0,90}"
+                    r"|TRIBUNAL FEDERAL DE JUICIO[^,.;]{0,90}|TRIBUNAL DE JUICIO[^,.;]{0,90})")   # sistema acusatorio
 SENADO = re.compile(r"\b(SENADO|ACUERDO PRESTADO|ACUERDO DEL? (?:HONORABLE )?SENADO)\b")
 SUBROGA = re.compile(r"\bSUBROGA\w*")
 # --- Detección de BAJAS de jueces (liberan el cargo): renuncia / cese / remoción /
@@ -343,6 +344,9 @@ def test():
          "Acéptase la renuncia presentada por la doctora Graciela Beatriz PEREIRA al cargo de JUEZA DEL JUZGADO FEDERAL N 2 DE SALTA.", "baja", "ALTA", True),
         ("JUSTICIA Decreto 99/2025 - Remoción.",
          "Remuévese al doctor X del cargo de JUEZ del Juzgado Federal de Tartagal.", "baja", "ALTA", True),
+        # Decreto 1066/2026: renuncia de un juez del «Tribunal Federal de Juicio» (nombre del sistema acusatorio)
+        ("JUSTICIA Decreto 1066/2026 DECTO-2026-1066-APN-PTE - Acéptase renuncia.",
+         "Acéptase, a partir del 1° de diciembre de 2026, la renuncia presentada por el doctor X (D.N.I. N° 1) al cargo de JUEZ DEL TRIBUNAL FEDERAL DE JUICIO DE CORRIENTES, PROVINCIA DE CORRIENTES.", "baja", "ALTA", True),
     ]
     print("=== TEST de detección (altas y bajas) ===")
     ok = 0

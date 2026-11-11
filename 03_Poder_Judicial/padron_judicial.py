@@ -32,7 +32,7 @@ import sys
 import time
 import unicodedata
 import zipfile
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -46,6 +46,7 @@ OUTPUT_DIR = Path(__file__).resolve().parents[1] / "output"
 PADRON = OUTPUT_DIR / "padron_judicial.csv"            # padrón vivo
 PADRON_BASE = OUTPUT_DIR / "padron_judicial_base.csv"  # ancla = snapshot oficial
 REVISION = OUTPUT_DIR / "padron_revision.csv"          # eventos sin cargo asignado
+PENDIENTES = OUTPUT_DIR / "padron_pendientes_vigencia.csv"  # eventos con vigencia FUTURA (se aplican solos al llegar la fecha)
 TASAS_EST = OUTPUT_DIR / "padron_tasas_estimadas.csv"  # tasas recalculadas
 RADAR_ALTAS = OUTPUT_DIR / "nombramientos_jueces.csv"  # salida del radar (designaciones)
 # Mismo puente que la cobertura. OJO con el slug: el repo se renombró a
@@ -189,11 +190,56 @@ def normaliza(s: str) -> str:
     s = re.sub(r"\bCIUDAD AUTONOMA DE BUENOS AIRES\b", "CABA", s)
     s = re.sub(r"\bCIUDAD DE BUENOS AIRES\b", "CABA", s)
     s = re.sub(r"\bC A B A\b", "CABA", s)
+    s = re.sub(r"\bCAP FEDERAL\b", "CABA", s)
+    s = re.sub(r"\bLA CAPITAL\b", "LA CABA", s)      # «… N° 4 de la Capital» (sin «Federal»)
     return s
 
 
+# Nombres de órganos. El sistema acusatorio los fue renombrando y el padrón oficial mezcla ambos
+# nombres según la provincia (p. ej. «Tribunal Federal de Juicio de Neuquén» pero «Tribunal Oral
+# en lo Criminal Federal de Corrientes»); el decreto puede usar el otro. Caso real que lo motivó:
+# Decreto 1066/2026 («Tribunal Federal de Juicio de Corrientes») vs padrón («Tribunal Oral en lo
+# Criminal Federal de Corrientes»). Se pasan a una forma CANÓNICA antes de comparar, de los dos lados.
+ALIAS_ORGANO = [
+    (r"\bTRIBUNAL(?:ES)? ORAL(?:ES)? EN LO CRIMINAL FEDERAL\b", "TRIBUNAL FEDERAL DE JUICIO"),
+    (r"\bTRIBUNAL(?:ES)? ORAL(?:ES)? FEDERAL(?:ES)?\b", "TRIBUNAL FEDERAL DE JUICIO"),
+    (r"\bTRIBUNAL(?:ES)? DE JUICIO FEDERAL(?:ES)?\b", "TRIBUNAL FEDERAL DE JUICIO"),
+    (r"\bJUZGADO FEDERAL DE (?:PRIMERA INSTANCIA|GARANTIAS?)\b", "JUZGADO FEDERAL"),
+]
+# Palabras de tipo/materia de órgano: NO identifican un lugar.
+GENERICO = {"APELACIONES", "JUICIO", "INSTANCIA", "CASACION", "PENAL", "CRIMINAL", "FEDERAL", "NACIONAL",
+            "CIVIL", "COMERCIAL", "TRABAJO", "SEGURIDAD", "SOCIAL", "CONTENCIOSO", "ADMINISTRATIVO",
+            "ELECTORAL", "ECONOMICO", "CORRECCIONAL", "EJECUCION", "MENORES", "FAMILIA", "GARANTIA",
+            "GARANTIAS", "FUNCIONES", "ASIENTO", "CIUDAD", "SALA", "TRIBUNAL", "JUZGADO", "CAMARA", "ORAL",
+            "VOCALIA", "VOCAL", "SECRETARIA"}
+
+
+def canon(s: str) -> str:
+    """Forma canónica de un nombre de órgano: sin el paréntesis «(con funciones de Juicio)», que
+    describe la función y no identifica el órgano, y con los sinónimos unificados."""
+    t = normaliza(re.sub(r"\([^)]*\)", " ", str(s)))
+    t = re.split(r"\b(?:A LA DOC\w*|AL DOC\w*|A LA DRA?|AL DR)\b", t)[0].strip()   # coletilla «… a la doctora X»
+    for pat, rep in ALIAS_ORGANO:
+        t = re.sub(pat, rep, t)
+    return t
+
+
 def tokens(s: str) -> set:
-    return {t for t in normaliza(s).split() if t not in STOP and (len(t) > 1 or t.isdigit())}
+    return {t for t in canon(s).split() if t not in STOP and (len(t) > 1 or t.isdigit())}
+
+
+def lugar(org: str) -> set:
+    """Tokens del LUGAR de un órgano (ciudad): lo que sigue al último «DE». Se ignora el sufijo
+    «, PROVINCIA DE X» (repite la provincia) y las salas. Vacío si no se puede inferir un lugar."""
+    t = canon(org)
+    t = re.sub(r"\bSALA [A-Z0-9]+\b", " ", t)
+    m = re.search(r"\bPROVINCIA DEL? [A-Z ]+?\s*$", t)
+    if m:
+        t = t[:m.start()].strip()
+    partes = re.split(r"\bDE\b", t)
+    if len(partes) < 2:
+        return set()
+    return {w for w in partes[-1].split() if w not in STOP and w not in GENERICO and len(w) > 1 and not w.isdigit()}
 
 
 def numero(s: str):
@@ -208,16 +254,65 @@ def limpiar_organo(texto: str) -> str:
     return t.strip()
 
 
+_TEXTO_BORA: dict = {}
+
+
+def _texto_bora(url: str) -> str:
+    """Texto plano de un aviso del BORA ('' si no se pudo leer). Se cachean solo las lecturas
+    EXITOSAS (el mismo decreto se consulta para el órgano y para la vigencia); un fallo se reintenta."""
+    if url in _TEXTO_BORA:
+        return _TEXTO_BORA[url]
+    for intento in range(3):
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=20)
+            if r.status_code == 200:
+                _TEXTO_BORA[url] = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", r.text))
+                return _TEXTO_BORA[url]
+        except Exception:  # noqa: BLE001
+            pass
+        time.sleep(1.5 * (intento + 1))
+    return ""
+
+
+_MESES = {m: i + 1 for i, m in enumerate(["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio",
+                                           "agosto", "septiembre", "octubre", "noviembre", "diciembre"])}
+_MESES["setiembre"] = 9
+
+
+def vigencia_desde_texto(txt: str):
+    """Fecha desde la que rige el decreto, si dice «a partir del 1° de diciembre de 2026» o
+    «a partir del 01/12/2026» (también «con efecto al/a partir del …»). None si no aclara: rige
+    desde la publicación. Importa en renuncias/ceses con fecha futura."""
+    pre = r"(?:a\s+partir\s+del?|con\s+efectos?\s+(?:a\s+partir\s+del?|al|desde\s+el))\s+"
+    m = re.search(pre + r"(\d{1,2})\s*(?:°|º|ro|er)?\s+de\s+([A-Za-záéíóúÁÉÍÓÚ]+)\s+de(?:l)?\s+(\d{4})", txt, re.I)
+    if m:
+        mes = _MESES.get(unicodedata.normalize("NFKD", m.group(2).lower()).encode("ascii", "ignore").decode())
+        if mes:
+            try:
+                return pd.Timestamp(int(m.group(3)), mes, int(m.group(1)))
+            except ValueError:
+                return None
+    m = re.search(pre + r"(\d{1,2})/(\d{1,2})/(\d{4})", txt, re.I)
+    if m:
+        try:
+            return pd.Timestamp(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        except ValueError:
+            return None
+    return None
+
+
+def vigencia_desde_bora(url: str):
+    return vigencia_desde_texto(_texto_bora(url))
+
+
 def organo_desde_bora(url: str) -> str:
     """Lee el cuerpo del decreto en el BORA y extrae el ÓRGANO al que se designa, cubriendo
     todos los tipos (juzgado, cámara, sala, tribunal oral, tribunal federal de juicio, etc.).
     Es la fuente autoritativa para el matching; el `organo` del radar queda como respaldo."""
     try:
-        r = requests.get(url, headers=HEADERS, timeout=20)
-        if r.status_code != 200:
+        t = _texto_bora(url)
+        if not t:
             return ""
-        t = re.sub(r"<[^>]+>", " ", r.text)
-        t = re.sub(r"\s+", " ", t)
         m = re.search(
             r"\b(?:JUEZ|JUEZA|JUECES|VOCAL|MAGISTRAD\w*)\b\s+DE\s*L?\s+(?:LA\s+)?(.+?)"
             r"(?:,?\s+a\s+l[ao]\s+(?:doctora?|dra?)\b|,?\s+al\s+(?:doctora?|dr)\b|\(?\s*D\.?N\.?I|\.\s|$)",
@@ -361,21 +456,58 @@ def _cargar_eventos(path: Path, tipo: str, url: str = "") -> pd.DataFrame:
     return pd.DataFrame()
 
 
-def _match(ev_org: str, pad: pd.DataFrame, umbral: float = 0.6):
-    """Devuelve índices candidatos (ordenados por score desc) que superan el umbral y son
-    compatibles en número de juzgado. Determinístico: containment de tokens del decreto."""
-    D = tokens(ev_org); dn = numero(ev_org)
+def _preparar(pad: pd.DataFrame) -> pd.DataFrame:
+    """Columnas auxiliares del padrón para el matching. El LUGAR de un cargo es el de su propio órgano
+    y provincia (_lug); la cámara de apelaciones NO cuenta, porque un juzgado de Jujuy depende de la
+    Cámara Federal de Salta y no por eso es «de Salta». Solo para eventos de cámaras/salas se usa
+    el lugar de la cámara (_lugc)."""
+    pad["_tok"] = (pad["camara"] + " " + pad["organo_nombre"] + " " + pad["provincia"]).map(tokens)
+    pad["_lug"] = (pad["organo_nombre"] + " " + pad["provincia"]).map(tokens)
+    pad["_lugc"] = pad["_tok"]
+    pad["_num"] = pad["organo_nombre"].map(numero)
+    return pad
+
+
+def _match_detalle(ev_org: str, pad: pd.DataFrame, umbral: float = 0.6):
+    """Busca el órgano del evento en el padrón. Devuelve (índices de cargos, motivo_si_falla).
+    Determinístico y CONSERVADOR con lo que puede dañar el dato: nunca cruza provincias.
+      1. Los nombres se comparan en forma canónica (alias: «Tribunal Federal de Juicio» ≡ «Tribunal
+         Oral en lo Criminal Federal»; se ignora el paréntesis «(con funciones de …)»).
+      2. El número de juzgado, si está en ambos, debe coincidir.
+      3. El LUGAR (ciudad) del decreto es OBLIGATORIO. Antes bastaba con compartir las palabras de
+         tipo: un decreto de «Tribunal Federal de Juicio de Corrientes» podía aplicarse al de Neuquén.
+         Si el lugar no aparece en ningún cargo, no se adivina: va a revisión humana.
+    Entre los cargos que pasan, el orden es el de siempre (mejor puntaje primero)."""
+    D = tokens(ev_org)
+    dn = numero(ev_org)
     if not D:
-        return []
-    puntajes = []
-    for i, rt, rn in zip(pad.index, pad["_tok"], pad["_num"]):
+        return [], "sin órgano identificable"
+    L = lugar(ev_org)
+    ce = canon(ev_org)
+    es_camara = ce.startswith("CAMARA") or bool(re.search(r"\bSALA\b", ce))
+    col_lug = ("_lugc" if es_camara else "_lug") if "_lug" in pad.columns else "_tok"
+    cand, cand_sin_lugar = [], 0
+    for i, rt, rl, rn in zip(pad.index, pad["_tok"], pad[col_lug], pad["_num"]):
         if dn and rn and dn != rn:
             continue
         sc = len(D & rt) / len(D)
-        if sc >= umbral:
-            puntajes.append((sc, i))
-    puntajes.sort(reverse=True)
-    return [i for _, i in puntajes]
+        if sc < umbral:
+            continue
+        if L and not L <= rl:
+            cand_sin_lugar += 1
+            continue
+        cand.append((sc, i))
+    if not cand:
+        if cand_sin_lugar:
+            return [], f"el lugar del decreto ({' '.join(sorted(L))}) no coincide con ningún cargo del padrón"
+        return [], "sin cargo coincidente"
+    cand.sort(reverse=True)
+    return [i for _, i in cand], ""
+
+
+def _match(ev_org: str, pad: pd.DataFrame, umbral: float = 0.6):
+    """Índices de los cargos candidatos del evento, mejor puntaje primero ([] si no hay)."""
+    return _match_detalle(ev_org, pad, umbral)[0]
 
 
 def _fix_anio_truncado(fecha_str: str) -> str:
@@ -427,7 +559,7 @@ def actualizar() -> int:
         log.error("No existe %s. Corré primero: padron_judicial.py --construir", PADRON_BASE.name)
         return 1
     pad = pd.read_csv(PADRON_BASE, dtype=str).fillna("")
-    pad["_tok"] = (pad["camara"] + " " + pad["organo_nombre"] + " " + pad["provincia"]).map(tokens)
+    _preparar(pad)
     pad["_num"] = pad["organo_nombre"].map(numero)
 
     altas = _cargar_eventos(RADAR_ALTAS, "alta", url=RADAR_ALTAS_URL)
@@ -449,7 +581,8 @@ def actualizar() -> int:
             log.info("%s evento(s) <= snapshot (%s) ignorados: ya están en el dato oficial.", previos, snap_fecha)
     log.info("Eventos a aplicar (posteriores al snapshot): %s", len(eventos))
 
-    revision, aplicados, ya_aplicados_otra_fuente = [], 0, 0
+    revision, pendientes, aplicados, ya_aplicados_otra_fuente = [], [], 0, 0
+    hoy = pd.Timestamp((datetime.now(timezone.utc) - timedelta(hours=3)).date())   # fecha de hoy en Argentina
     for _, ev in eventos.iterrows():
         # Autoritativo: leer el órgano del cuerpo del decreto (si hay URL de BORA); respaldo:
         # el `organo` que ya trae el evento (el Consejo de la Magistratura no tiene decreto
@@ -459,9 +592,16 @@ def actualizar() -> int:
         org = limpiar_organo(org_raw)
         if url_ev:
             time.sleep(0.8)
-        cand = _match(org, pad)
+        # Vigencia futura (p. ej. renuncia «a partir del 1° de diciembre»): el cargo sigue ocupado hasta
+        # esa fecha. No se aplica todavía; como el padrón se rearma desde el snapshot en cada corrida,
+        # el evento se aplica solo cuando llega la fecha.
+        vig = vigencia_desde_bora(url_ev) if url_ev else None
+        if vig is not None and vig > hoy:
+            pendientes.append({**ev.to_dict(), "_vigencia": vig.strftime("%Y-%m-%d"), "_organo": org})
+            continue
+        cand, motivo_match = _match_detalle(org, pad)
         if not cand:
-            revision.append({**ev.to_dict(), "_motivo": "sin cargo coincidente", "_organo": org})
+            revision.append({**ev.to_dict(), "_motivo": motivo_match, "_organo": org})
             continue
         objetivo, ya_titular = None, False
         for i in cand:                       # alta → un cargo NO titular; baja → uno Titular
@@ -491,10 +631,14 @@ def actualizar() -> int:
         log.info("%s alta(s) del Consejo de la Magistratura ya estaban aplicadas por otra fuente "
                  "(radar del BORA) — no se mandan a revisión.", ya_aplicados_otra_fuente)
 
-    pad = pad.drop(columns=["_tok", "_num"])
+    pad = pad.drop(columns=[c for c in ("_tok", "_lug", "_lugc", "_num") if c in pad.columns])
     pad.to_csv(PADRON, index=False, encoding="utf-8")
     pd.DataFrame(revision).to_csv(REVISION, index=False, encoding="utf-8")
-    log.info("Aplicados: %s | a revisión: %s", aplicados, len(revision))
+    pd.DataFrame(pendientes).to_csv(PENDIENTES, index=False, encoding="utf-8")
+    log.info("Aplicados: %s | a revisión: %s | con vigencia futura (se aplican solos): %s",
+             aplicados, len(revision), len(pendientes))
+    for p_ in pendientes:
+        log.info("  vigencia %s — %s (%s)", p_["_vigencia"], p_.get("_organo", ""), p_.get("_tipo", ""))
     if revision:
         log.warning("%s evento(s) sin asignar → %s (revisión humana).", len(revision), REVISION.name)
     _imprimir_tasas(pad, etiqueta="estimado (vivo)")
@@ -517,12 +661,94 @@ def _imprimir_tasas(pad: pd.DataFrame, etiqueta: str) -> None:
             print(f"  {k}: {v}")
 
 
+def _padron_demo() -> pd.DataFrame:
+    """Mini padrón con los nombres reales mezclados (viejo y nuevo sistema) para la prueba."""
+    filas = [
+        ("Tribunal Oral en lo Criminal Federal de Corrientes", "Corrientes", "Titular"),
+        ("Tribunal Oral en lo Criminal Federal de Corrientes", "Corrientes", "Sin cobertura"),
+        ("Tribunal Federal de Juicio de Neuquén", "Neuquén", "Titular"),
+        ("Tribunal Federal de Juicio de Neuquén", "Neuquén", "Sin cobertura"),
+        ("Tribunal Oral en lo Criminal Federal Nº 1 de Rosario (con Funciones de Juicio)", "Santa Fe", "Titular"),
+        ("Tribunal Oral en lo Criminal Federal Nº 2 de Rosario  (con Funciones de Juicio)", "Santa Fe", "Titular"),
+        ("Juzgado Federal de Primera Instancia Nº 3 de Rosario (con funciones de Garantía)", "Santa Fe", "Titular"),
+        ("Juzgado Nacional en lo Criminal y Correccional N° 9 de la Capital Federal", "Ciudad de Buenos Aires", "Titular"),
+        ("Juzgado Nacional en lo Criminal y Correccional N° 10 de la Capital Federal", "Ciudad de Buenos Aires", "Titular"),
+        ("Tribunal Oral en lo Criminal Federal de Mar del Plata", "Provincia de Buenos Aires", "Titular"),
+        ("Juzgado Federal de Primera Instancia Nº 2 de Salta", "Salta", "Titular"),
+        ("Juzgado Federal de Primera Instancia Nº 2 de Jujuy", "Jujuy", "Titular"),
+    ]
+    pad = pd.DataFrame(filas, columns=["organo_nombre", "provincia", "estado"])
+    pad["camara"] = ""
+    pad.loc[pad["organo_nombre"].str.contains("Primera Instancia Nº 2 de (?:Jujuy|Salta)"), "camara"] = \
+        "Cámara Federal de Apelaciones de Salta"          # los juzgados de Jujuy dependen de la Cámara de Salta
+    _preparar(pad)
+    pad["_num"] = pad["organo_nombre"].map(numero)
+    return pad
+
+
+def _test() -> int:
+    """Prueba sin red del matching (alias, lugar obligatorio, ambigüedad) y de la vigencia."""
+    pad = _padron_demo()
+
+    def orgs(texto):
+        idx, motivo = _match_detalle(limpiar_organo(texto), pad)
+        return sorted({pad.at[i, "organo_nombre"].split(" (")[0].strip() for i in idx}), motivo
+
+    casos = [
+        ("TRIBUNAL FEDERAL DE JUICIO DE CORRIENTES, PROVINCIA DE CORRIENTES",
+         ["Tribunal Oral en lo Criminal Federal de Corrientes"], None),   # Decreto 1066/2026
+        ("TRIBUNAL ORAL EN LO CRIMINAL FEDERAL DE NEUQUEN",
+         ["Tribunal Federal de Juicio de Neuquén"], None),                 # alias al revés
+        ("TRIBUNAL FEDERAL DE JUICIO DE SALTA", [], "no coincide"),   # NO se confunde con Neuquén
+        ("TRIBUNAL FEDERAL DE JUICIO DE ROSARIO",                           # sin número: los de Rosario, no otros
+         ["Tribunal Oral en lo Criminal Federal Nº 1 de Rosario", "Tribunal Oral en lo Criminal Federal Nº 2 de Rosario"], None),
+        ("TRIBUNAL FEDERAL DE JUICIO N 2 DE ROSARIO",
+         ["Tribunal Oral en lo Criminal Federal Nº 2 de Rosario"], None),
+        ("JUZGADO FEDERAL DE GARANTIAS N 3 DE ROSARIO",
+         ["Juzgado Federal de Primera Instancia Nº 3 de Rosario"], None),
+        ("JUZGADO NACIONAL EN LO CRIMINAL Y CORRECCIONAL N 9 DE LA CAPITAL FEDERAL",
+         ["Juzgado Nacional en lo Criminal y Correccional N° 9 de la Capital Federal"], None),
+        ("TRIBUNAL ORAL EN LO CRIMINAL FEDERAL DE MAR DEL PLATA",
+         ["Tribunal Oral en lo Criminal Federal de Mar del Plata"], None),
+        ("JUZGADO FEDERAL DE PRIMERA INSTANCIA N 2 DE SALTA PROVINCIA DE SALTA",           # NO el de Jujuy
+         ["Juzgado Federal de Primera Instancia Nº 2 de Salta"], None),
+        ("JUZGADO NACIONAL EN LO CRIMINAL Y CORRECCIONAL N 9 DE LA CAPITAL",                  # «de la Capital» a secas
+         ["Juzgado Nacional en lo Criminal y Correccional N° 9 de la Capital Federal"], None),
+        ("JUZGADO NACIONAL EN LO CRIMINAL Y CORRECCIONAL N 10 DE LA CABA A LA DOCT",          # coletilla truncada
+         ["Juzgado Nacional en lo Criminal y Correccional N° 10 de la Capital Federal"], None),
+    ]
+    ok = 0
+    print("=== TEST padrón judicial (matching de órganos) ===")
+    for texto, esperado, motivo in casos:
+        got, mot = orgs(texto)
+        bien = (got == sorted(e.split(" (")[0].strip() for e in esperado)) and (motivo is None or motivo in mot)
+        ok += bien
+        print(f"  [{'OK' if bien else '✗'}] {texto[:62]:62s} → {got or mot}")
+    vig = [
+        ("Acéptase, a partir del 1° de diciembre de 2026, la renuncia presentada", pd.Timestamp(2026, 12, 1)),
+        ("a partir del 15/03/2027 la renuncia", pd.Timestamp(2027, 3, 15)),
+        ("con efectos a partir del 2 de setiembre de 2026", pd.Timestamp(2026, 9, 2)),
+        ("Acéptase la renuncia presentada por el doctor X", None),
+    ]
+    for texto, esperado in vig:
+        got = vigencia_desde_texto(texto)
+        bien = (got == esperado) if esperado is not None else got is None
+        ok += bien
+        print(f"  [{'OK' if bien else '✗'}] vigencia: {texto[:55]:55s} → {got.date() if got is not None else None}")
+    total = len(casos) + len(vig)
+    print(f"{ok}/{total} casos correctos.")
+    return 0 if ok == total else 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="MIA — Padrón judicial vivo")
     ap.add_argument("--construir", action="store_true", help="crea el padrón base desde el snapshot oficial")
     ap.add_argument("--actualizar", action="store_true", help="aplica altas/bajas del BORA sobre el padrón")
     ap.add_argument("--verbose", action="store_true", help="vuelca columnas y ejemplos del dataset")
+    ap.add_argument("--test", action="store_true", help="prueba el matching de órganos y la vigencia (sin red)")
     args = ap.parse_args()
+    if args.test:
+        return _test()
     if args.construir:
         return construir(verbose=args.verbose)
     if args.actualizar:

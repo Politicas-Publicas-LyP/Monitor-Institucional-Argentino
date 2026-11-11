@@ -1,6 +1,6 @@
 # Bitácora — Poder Judicial
 
-<!-- huella: e52390fd718c -->
+<!-- huella: f9f6d33ed61a -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -75,6 +75,24 @@ Cobertura = independencia (titularidad) + funcional (vacantes sin cubrir) + fluj
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — **Padrón: reconoce los nombres nuevos y ya no cruza provincias.** Caso que lo motivó: Decreto 1066/2026
+  (renuncia de un juez del «Tribunal Federal de Juicio de Corrientes», que el padrón oficial llama «Tribunal Oral en lo
+  Criminal Federal de Corrientes»). Al revisarlo apareció un defecto de fondo: el matching solo comparaba palabras de tipo
+  y asignó mal algunos casos reales a otra provincia (p. ej. «Tribunal Oral Federal de Neuquén» → N°8 de CABA; «Juzgado
+  Federal de San Carlos de Bariloche» y «N°2 de Salta» → San Justo; «Tribunal Federal de Juicio de Formosa» → Neuquén).
+  Cambios en `padron_judicial.py` (`--test`, 15 casos): (1) **alias** de nombres, de los dos lados («Tribunal Federal de
+  Juicio» ≡ «Tribunal Oral en lo Criminal Federal»; «Juzgado Federal de Garantías/Primera Instancia»; se ignora el
+  paréntesis «(con funciones de …)»); (2) **lugar obligatorio** (la ciudad del decreto debe estar en el órgano o provincia
+  del cargo; la cámara de apelaciones no cuenta, porque Jujuy depende de la de Salta; para cámaras/salas sí), y si no
+  coincide va a revisión con el motivo; (3) **vigencia**: un decreto «a partir del 1° de diciembre» no se aplica hasta esa
+  fecha (queda en `output/padron_pendientes_vigencia.csv` y se aplica solo en la corrida posterior); (4) variantes de
+  escritura («Cap. Federal», «de la Capital», «a la doct…», vocalías). Lectura del decreto con reintentos.
+  **Efecto medido** (192 eventos reales, lógica nueva vs el padrón de hoy): titulares 776 → 770, sin cobertura 39 → 44;
+  `tasa_titular` 0,7958 → 0,7916 (−0,4 pp), `tasa_sin_cobertura` 0,0408 → 0,0461. Estimado: menos de 0,01 puntos del
+  índice. **No se reescribió nada publicado:** octubre quedó congelado con la lógica anterior; la corrida de noviembre ya
+  usa la nueva. Queda en revisión: 3 altas (San Juan N°2, Catamarca ×2) sin cargo disponible, y el Decreto 1066 si el BORA
+  no responde al leerlo. Pendiente: decretos «Nómbranse JUECES…» en plural no traen órgano en el texto y no se mapean.
+
 - 2026-11-11 — Corrida de sep+oct: el padrón aplicó 173 eventos (el Consejo de la Magistratura aportó 123 designaciones,
   18 ya estaban por el BORA) y mandó 1 a `padron_revision.csv` (baja del Decreto 1066/2026, sin cargo coincidente: revisar
   a mano). OJO: la estimación del padrón solo pisa el STOCK del último mes del rango, así que `tasa_titular` pasa de 0,6325

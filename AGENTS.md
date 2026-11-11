@@ -156,6 +156,12 @@ dataset de magistrados y el bot actualiza EN VIVO con los eventos del BORA.
   `scraper_05_cobertura_judicial.py` sobreescribe el STOCK del mes corriente con esas tasas
   (`cobertura_estimada=1`) si el archivo existe. Se reconcilia solo con cada snapshot oficial nuevo.
 
+- **Matching de órganos (desde 2026-11-11):** los nombres se comparan en forma canónica (alias del sistema acusatorio:
+  «Tribunal Federal de Juicio» ≡ «Tribunal Oral en lo Criminal Federal»), el **lugar es obligatorio** (no se cruzan
+  provincias; lo dudoso va a `padron_revision.csv` con el motivo) y un decreto con **vigencia futura** («a partir del
+  1° de diciembre») queda en `output/padron_pendientes_vigencia.csv` y se aplica solo al llegar la fecha.
+  `py 03_Poder_Judicial/padron_judicial.py --test` prueba todo esto sin red.
+
 ## Radar de la Presidencia del BCRA (05_Banco_Central/radar_bcra.py)
 
 Radar liviano, **solo alerta**: escanea el BORA y avisa designación, renuncia o fin de mandato del

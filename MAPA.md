@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-11-11 19:38 UTC · 43 archivos · 8,739 LOC -->
+<!-- 2026-11-11 22:12 UTC · 43 archivos · 8,969 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `main` — ultimo commit: 2026-11-11 e0568d5 Proxy del BORA: probar los 16 lectores por URL antes de rendirse · **hay cambios sin commitear**
+Rama `main` — ultimo commit: 2026-11-11 46d74f7 Bitácoras: confirmaciones humanas del cierre de sep+oct y próximos pasos · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -73,14 +73,14 @@ Rama `main` — ultimo commit: 2026-11-11 e0568d5 Proxy del BORA: probar los 16 
 
 | Carpeta | Que es | Arch. | LOC | Bitacora |
 |---|---|---:|---:|---|
+| `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,605 | ok |
 | `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 11 | 1,579 | ok |
 | `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 4 | 1,387 | ok |
-| `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,379 | ok |
 | `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,119 | ok |
 | `04_Prensa_Institucional/` | Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficial, causas judiciales contra periodistas (FOPEA), medios estatales y acceso de la prensa. | 5 | 826 | ok |
 | `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 822 | ok |
 | `02_Poder_Legislativo/` | Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), eficacia de control (art. 101, informes JGM), costo del Congreso y cumplimiento de sesiones. | 4 | 806 | ok |
-| `07_Radar_Nombramientos/` | Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces por día) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo. | 1 | 382 | ok |
+| `07_Radar_Nombramientos/` | Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces por día) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo. | 1 | 386 | ok |
 | `06_Historico/` | MIA Núcleo — serie larga comparable (anual 2003+, mensual 2020+) con las variables `nucleo: true` de variables.yaml; sus niveles NO coinciden con el índice pleno. | 2 | 190 | ok |
 | `.github\workflows/` | _sin describir_ | 2 | 126 | — |
 | `./` | Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa). | 1 | 123 | ok |
@@ -108,12 +108,12 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 | `00_Comun\icia_ensamblado.py` | 265 | 2 | `_cargar_config`, `cargar_nucleo`, `_latest`, `_col` |
 | `00_Comun\bora_proxy.py` | 151 | 2 | `_proxy_url`, `_es_bora`, `_via_proxy`, `get_bora` |
 | `scripts\mapa_modelo_topologia.py` | 203 | 1 | — |
+| `03_Poder_Judicial\padron_judicial.py` | 762 | 0 | `session`, `_read_csv_resilient`, `_snapshot_date`, `_es_jueces` |
 | `scripts\indexar.py` | 714 | 0 | `cargar_gitignore`, `ignorado`, `leer`, `git` |
-| `03_Poder_Judicial\padron_judicial.py` | 536 | 0 | `session`, `_read_csv_resilient`, `_snapshot_date`, `_es_jueces` |
 | `03_Poder_Judicial\scraper_05_cobertura_judicial.py` | 431 | 0 | `session`, `_read_csv_resilient`, `_tasa`, `_snapshot_date` |
 | `01_Poder_Ejecutivo\scraper_01_dnu_leyes.py` | 389 | 0 | `DNULeyesScraper`, `main` |
+| `07_Radar_Nombramientos\radar_nombramientos.py` | 386 | 0 | `normalizar`, `es_candidata`, `_fecha_de_url`, `get_con_reintentos` |
 | `01_Poder_Ejecutivo\scraper_16_atn.py` | 382 | 0 | `_mask_fallback_programa19`, `session`, `_to_num`, `atn_anual` |
-| `07_Radar_Nombramientos\radar_nombramientos.py` | 382 | 0 | `normalizar`, `es_candidata`, `_fecha_de_url`, `get_con_reintentos` |
 | `00_Comun\generar_reporte_mensual.py` | 343 | 0 | `fmt`, `signo`, `mes_label`, `graficos` |
 | `05_Banco_Central\radar_bcra.py` | 304 | 0 | `normaliza`, `get_con_reintentos`, `_fecha_de_url`, `obtener_lista_bora` |
 
@@ -129,16 +129,16 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 
 Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
-- `.mapa/mapa.json` + `MAPA.md` (22 commits)
+- `.mapa/mapa.json` + `MAPA.md` (23 commits)
 - `output/_alertas_validacion.md` + `output/mia_reporte.md` (8 commits)
+- `.mapa/mapa.json` + `BITACORA.md` (6 commits)
+- `BITACORA.md` + `MAPA.md` (6 commits)
 - `.mapa/mapa.json` + `00_Comun/BITACORA.md` (5 commits)
 - `00_Comun/BITACORA.md` + `MAPA.md` (5 commits)
-- `.mapa/mapa.json` + `BITACORA.md` (5 commits)
-- `BITACORA.md` + `MAPA.md` (5 commits)
+- `.mapa/mapa.json` + `02_Poder_Legislativo/BITACORA.md` (4 commits)
+- `02_Poder_Legislativo/BITACORA.md` + `MAPA.md` (4 commits)
 - `00_Comun/BITACORA.md` + `07_Radar_Nombramientos/BITACORA.md` (4 commits)
 - `.mapa/mapa.json` + `AGENTS.md` (4 commits)
-- `00_Comun/BITACORA.md` + `AGENTS.md` (4 commits)
-- `AGENTS.md` + `MAPA.md` (4 commits)
 
 ## Fuentes externas
 

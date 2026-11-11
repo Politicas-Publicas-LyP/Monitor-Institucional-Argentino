@@ -1,6 +1,6 @@
 # Bitácora — Radar de Nombramientos (BORA)
 
-<!-- huella: b28e1e338cab -->
+<!-- huella: f13d624369b0 -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -28,6 +28,9 @@ Resumen: Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces 
 - **Pendientes:** verificar la 1ª corrida real por el proxy (workflow_dispatch) y mirar 2-3 días hábiles; pendiente M3 (alerta de "última fecha escaneada").
 
 ## Registro de cambios
+- 2026-11-11 — El radar reconoce el nombre del sistema acusatorio: la regex de órganos incluye «Tribunal Federal de
+  Juicio» / «Tribunal de Juicio» (antes dejaba `organo` vacío, p. ej. Decreto 1066/2026). `--test` 9/9 (caso nuevo).
+
 - 2026-11-11 — Corrida manual #106 (tras el push) falló en «Correr radar»: los lectores 1-8 del proxy dieron 522 en la lista del BORA (racha mala del proxy; el radar BCRA, 4 s después, leyó bien). Fallar avisando funcionó y el workflow igual corrió el paso BCRA y la persistencia. Mejora: `bora_proxy.py` prueba los 16 lectores. Las corridas L-V de 09:30, 12:30 y 16:30 ART reintentan solas.
 - 2026-11-11 — **Fallar avisando también con fichas ilegibles.** Primera corrida real por el proxy: leyó la lista
   (70 normas) pero una ficha candidata no conectó en ningún lector y el radar igual dijo «Sin novedades».
