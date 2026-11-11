@@ -8,7 +8,7 @@
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `main` — ultimo commit: 2026-09-28 e917b6b Radares BORA: 2026-09-28 · **hay cambios sin commitear**
+Rama `main` — ultimo commit: 2026-11-11 34096b9 Radares BORA: leer por el proxy de Cloudflare (el BORA bloquea a GitHub Actions) · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -73,7 +73,7 @@ Rama `main` — ultimo commit: 2026-09-28 e917b6b Radares BORA: 2026-09-28 · **
 | `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,294 | **vencida** |
 | `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,020 | **vencida** |
 | `04_Prensa_Institucional/` | Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficial, causas judiciales contra periodistas (FOPEA), medios estatales y acceso de la prensa. | 5 | 826 | **vencida** |
-| `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 797 | **vencida** |
+| `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 797 | ok |
 | `02_Poder_Legislativo/` | Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), eficacia de control (art. 101, informes JGM), costo del Congreso y cumplimiento de sesiones. | 4 | 739 | **vencida** |
 | `07_Radar_Nombramientos/` | Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces por día) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo. | 1 | 357 | ok |
 | `archivos_borrar\_retirados_20260819/` | _sin describir_ | 3 | 286 | — |
@@ -125,14 +125,16 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 
 Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
+- `07_Radar_Nombramientos/LEEME.md` + `07_Radar_Nombramientos/radar_nombramientos.py` (4 commits)
 - `output/_alertas_validacion.md` + `output/mia_reporte.md` (4 commits)
+- `.github/workflows/radar_nombramientos.yml` + `07_Radar_Nombramientos/LEEME.md` (3 commits)
+- `.github/workflows/radar_nombramientos.yml` + `07_Radar_Nombramientos/radar_nombramientos.py` (3 commits)
+- `00_Comun/BITACORA.md` + `07_Radar_Nombramientos/BITACORA.md` (3 commits)
+- `00_Comun/BITACORA.md` + `AGENTS.md` (3 commits)
 - `00_Comun/BITACORA.md` + `output/_alertas_validacion.md` (3 commits)
 - `00_Comun/BITACORA.md` + `05_Banco_Central/BITACORA.md` (3 commits)
 - `AGENTS.md` + `correr_mensual.sh` (3 commits)
 - `AGENTS.md` + `output/_alertas_validacion.md` (3 commits)
-- `correr_mensual.sh` + `output/_alertas_validacion.md` (3 commits)
-- `03_Poder_Judicial/BITACORA.md` + `output/itr_reporte.md` (3 commits)
-- `07_Radar_Nombramientos/LEEME.md` + `07_Radar_Nombramientos/radar_nombramientos.py` (3 commits)
 
 ## Fuentes externas
 
@@ -157,5 +159,5 @@ Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
 ## Frescura
 
-- Bitacoras vencidas: `01_Poder_Ejecutivo/`, `02_Poder_Legislativo/`, `03_Poder_Judicial/`, `04_Prensa_Institucional/`, `05_Banco_Central/`, `06_Historico/`, `scripts/`
+- Bitacoras vencidas: `01_Poder_Ejecutivo/`, `02_Poder_Legislativo/`, `03_Poder_Judicial/`, `04_Prensa_Institucional/`, `06_Historico/`, `scripts/`
 - Carpetas sin bitacora: `.github\workflows/`, `archivos_borrar\_retirados_20260819/`

@@ -1,6 +1,6 @@
 # Bitácora — Banco Central
 
-<!-- huella: 95a43468538e -->
+<!-- huella: 0509753355ce -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -68,6 +68,7 @@ Resumen: Eje Banco Central (15%) — financiamiento al Tesoro y letras intransfe
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — `radar_bcra.py` lee el BORA con `00_Comun/bora_proxy.py` (proxy de Cloudflare): el BORA bloquea a los runners de GitHub desde 2026-10-22. Revisado 2026-09-28..11-11 desde IP argentina: sin eventos de la Presidencia del BCRA (el radar estuvo caído ese período en Actions).
 - 2026-08-19 — `scraper_18_bcra_financiamiento.py` → renombrado **`diagnostico_panhis.py`** y
   RETIRADO de `correr_mensual.bat`/`.sh`: era un script de descubrimiento (volcaba la estructura
   de panhis.xls) que no produce ninguna serie y su nombre colisionaba con
