@@ -55,11 +55,19 @@ def session() -> requests.Session:
 def scrape(s: requests.Session) -> pd.DataFrame:
     resp = s.get(URL, timeout=60)
     resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "lxml")
+    # resp.content (bytes): BeautifulSoup detecta la codificación; con resp.text, requests asume
+    # ISO-8859-1 si el servidor no declara charset y "Minoría" llega como "MinorÃ­a" (no matchea).
+    soup = BeautifulSoup(resp.content, "lxml")
     rows = []
-    for a in soup.find_all("a", href=True):
-        if "sesion.html" not in a["href"]:
-            continue
+    # Cada sesión es un <a> dentro del acordeón de períodos (div#periodos). Hasta 2026-10 el href
+    # contenía "sesion.html"; desde el rediseño de hcdn.gob.ar es "../_q/<hash>.html", así que se
+    # identifica por la ESTRUCTURA (acordeón) y se mantiene el criterio viejo como respaldo.
+    panel = soup.find(id="periodos")
+    enlaces = panel.find_all("a", href=True) if panel is not None else         [a for a in soup.find_all("a", href=True) if "sesion.html" in a["href"]]
+    if not enlaces:
+        raise RuntimeError("HCDN /sesiones/: no se encontró ninguna sesión (¿cambió la estructura "
+                           "de la página? revisar el acordeón #periodos)")
+    for a in enlaces:
         txt = a.get_text(" ", strip=True)
         m = FECHA_RE.search(txt)
         if not m:

@@ -1,6 +1,6 @@
 # Bitácora — Poder Legislativo
 
-<!-- huella: 55381d4225e1 -->
+<!-- huella: 0a0de3131f87 -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -48,6 +48,15 @@ Resumen: Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), efi
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — **HCDN rediseñó su sitio** (durante la corrida de oct-2026). (1) `scraper_14_sesiones.py` falló con
+  `KeyError 'realizada'`: la página /sesiones/ ya no tiene enlaces con `sesion.html` (ahora `../_q/<hash>.html`) y el
+  scraper quedó con 0 filas. Reparado: identifica las sesiones por el acordeón `#periodos`, lee `resp.content` (evita el
+  mojibake «MinorÃ­a») y levanta un error claro si no encuentra ninguna. Verificado: reproduce idénticos los 56 períodos de
+  la corrida del 18-sep y suma sep/oct. (2) El buscador de proyectos (`/proyectos/resultado.html`) y el dataset de Datos
+  Abiertos (`datos.hcdn.gob.ar`, 503) muestran «Sección en construcción»: Calidad Normativa quedó con `n_*_pres` SIN DATO
+  en 2026-09 y 2026-10 (6 celdas). NO afecta el valor del índice: `variables.yaml` usa `n_leyes_sancionadas` (InfoLEG) y
+  las sesiones, no los proyectos simbólicos. Reintentar cuando HCDN publique su nueva versión (la caché ya no guarda
+  valores del fallback). Si el buscador cambia de estructura, habrá que reparar `count_presentados` y `_cargar_fallback_hcdn`.
 - 2026-11-11 — Revisión del fallback de Datos Abiertos: un valor resuelto por el fallback (subcontado, sin «comunicación») ya NO se guarda en `_cache_congreso.json`; la próxima corrida lo re-consulta al buscador de HCDN. (Verificado en los logs de las corridas del 17-18/sep que el fallback no llegó a usarse, así que la caché no quedó contaminada.)
 - 2026-09-18 — **Calidad Normativa: fallback a Datos Abiertos de HCDN.** Auditoría de fuentes
   (pedida por el usuario para las 18 variables) encontró que el buscador HTML de HCDN, señalado

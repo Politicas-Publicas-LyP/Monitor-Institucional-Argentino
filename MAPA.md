@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-11-11 18:25 UTC · 45 archivos · 8,816 LOC -->
+<!-- 2026-11-11 18:51 UTC · 45 archivos · 8,824 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `main` — ultimo commit: 2026-11-11 48ce204 Calidad Normativa: no cachear valores del fallback; reporte con colchÃ³n 2022-01 · **hay cambios sin commitear**
+Rama `main` — ultimo commit: 2026-11-11 23b8b0b Limpieza de output: sacar 55 CSV de corridas de prueba que reintrodujo el merge · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -72,18 +72,18 @@ Rama `main` — ultimo commit: 2026-11-11 48ce204 Calidad Normativa: no cachear 
 
 | Carpeta | Que es | Arch. | LOC | Bitacora |
 |---|---|---:|---:|---|
-| `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 4 | 1,387 | **vencida** |
+| `scripts/` | Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional. | 4 | 1,387 | ok |
 | `00_Comun/` | Motor del índice — ensamblador, variables.yaml (fuente única de variables, anclas y núcleo), QA de frescura, gráficos, histórico maestro inmutable y reporte mensual .docx. | 10 | 1,379 | ok |
 | `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,379 | ok |
 | `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,119 | ok |
 | `04_Prensa_Institucional/` | Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficial, causas judiciales contra periodistas (FOPEA), medios estatales y acceso de la prensa. | 5 | 826 | **vencida** |
 | `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 822 | ok |
-| `02_Poder_Legislativo/` | Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), eficacia de control (art. 101, informes JGM), costo del Congreso y cumplimiento de sesiones. | 4 | 798 | ok |
+| `02_Poder_Legislativo/` | Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), eficacia de control (art. 101, informes JGM), costo del Congreso y cumplimiento de sesiones. | 4 | 806 | ok |
 | `07_Radar_Nombramientos/` | Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces por día) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo. | 1 | 382 | ok |
 | `archivos_borrar\_retirados_20260819/` | _sin describir_ | 3 | 286 | — |
 | `06_Historico/` | MIA Núcleo — serie larga comparable (anual 2003+, mensual 2020+) con las variables `nucleo: true` de variables.yaml; sus niveles NO coinciden con el índice pleno. | 2 | 190 | ok |
 | `.github\workflows/` | _sin describir_ | 2 | 126 | — |
-| `./` | Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa). | 1 | 122 | **vencida** |
+| `./` | Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa). | 1 | 122 | ok |
 
 ## Puntos de entrada
 
@@ -129,7 +129,7 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 
 Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
-- `.mapa/mapa.json` + `MAPA.md` (14 commits)
+- `.mapa/mapa.json` + `MAPA.md` (15 commits)
 - `output/_alertas_validacion.md` + `output/mia_reporte.md` (7 commits)
 - `.github/workflows/radar_nombramientos.yml` + `07_Radar_Nombramientos/radar_nombramientos.py` (4 commits)
 - `07_Radar_Nombramientos/LEEME.md` + `07_Radar_Nombramientos/radar_nombramientos.py` (4 commits)
@@ -142,8 +142,8 @@ Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
 ## Fuentes externas
 
-- `datos.jus.gob.ar` — `00_Comun\infoleg_source.py`, `03_Poder_Judicial\padron_judicial.py`, `03_Poder_Judicial\scraper_05_cobertura_judicial.py`
 - `boletinoficial.gob.ar` — `05_Banco_Central\radar_bcra.py`, `07_Radar_Nombramientos\radar_nombramientos.py`, `output\bajas_jueces.csv`
+- `datos.jus.gob.ar` — `00_Comun\infoleg_source.py`, `03_Poder_Judicial\padron_judicial.py`, `03_Poder_Judicial\scraper_05_cobertura_judicial.py`
 - `dgsiaf-repo.mecon.gob.ar` — `01_Poder_Ejecutivo\scraper_16_atn.py`, `02_Poder_Legislativo\scraper_12_costo_legislativo.py`, `04_Prensa_Institucional\scraper_08_pauta.py`
 - `bcra.gob.ar` — `05_Banco_Central\diagnostico_panhis.py`, `05_Banco_Central\scraper_18_bcra_balance.py`, `archivos_borrar\_retirados_20260819\05_Banco_Central_scraper_18_bcra_financiamiento.py`
 - `bora-proxy-sam.politicaspublicas.workers.dev` — `.github\workflows\radar_nombramientos.yml`, `00_Comun\bora_proxy.py`
@@ -163,5 +163,5 @@ Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
 ## Frescura
 
-- Bitacoras vencidas: `./`, `04_Prensa_Institucional/`, `scripts/`
+- Bitacoras vencidas: `04_Prensa_Institucional/`
 - Carpetas sin bitacora: `.github\workflows/`, `archivos_borrar\_retirados_20260819/`
