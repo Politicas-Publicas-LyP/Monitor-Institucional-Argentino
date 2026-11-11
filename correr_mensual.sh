@@ -28,7 +28,8 @@ set -uo pipefail
 cd "$(dirname "$0")"
 QA_AVISOS=0
 
-DESDE="${DESDE:-2023-01}"        # colchon: 1 anio antes para suavizado 12m completo (no se publica)
+DESDE="${DESDE:-2022-01}"        # colchon: 2 anios antes para suavizado 12m completo (no se publica).
+                                  # Ampliado de 1 a 2 anios el 2026-09-18 (ver correr_mensual.bat para el detalle).
 PUBLICAR="${PUBLICAR:-2024-01}"  # inicio publicado = gestion Milei, ya suavizado
 # HASTA: prioridad = arg posicional $1 > env HASTA > (CERRAR_ANTERIOR ? mes anterior) > mes en curso.
 if [ "${1:-}" != "" ]; then
