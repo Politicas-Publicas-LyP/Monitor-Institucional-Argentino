@@ -2,13 +2,13 @@
 
 <!-- GENERADO por indexar.py. No editar: los cambios se pierden. -->
 <!-- La prosa vive en las BITACORA.md de cada carpeta. -->
-<!-- 2026-11-11 17:51 UTC · 45 archivos · 8,510 LOC -->
+<!-- 2026-11-11 18:06 UTC · 45 archivos · 8,565 LOC -->
 
 ## Como usar este archivo
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `main` — ultimo commit: 2026-11-11 34096b9 Radares BORA: leer por el proxy de Cloudflare (el BORA bloquea a GitHub Actions) · **hay cambios sin commitear**
+Rama `main` — ultimo commit: 2026-11-11 56411c2 BitÃ¡cora Banco Central: radar_bcra vÃ­a proxy del BORA · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -73,13 +73,13 @@ Rama `main` — ultimo commit: 2026-11-11 34096b9 Radares BORA: leer por el prox
 | `03_Poder_Judicial/` | Eje Judicial (20%) — cobertura/titularidad de jueces (dataset oficial + padrón vivo + radar del BORA) y desempeño de la CSJN (anuarios); PIA/OA queda como exploración. | 4 | 1,294 | **vencida** |
 | `01_Poder_Ejecutivo/` | Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presupuestaria (OPC+BO), transparencia AIP (AAIP) y ATN a provincias (DGSIAF). | 4 | 1,020 | **vencida** |
 | `04_Prensa_Institucional/` | Eje Prensa (15%) — escrutinio (conferencias vs cadenas), pauta oficial, causas judiciales contra periodistas (FOPEA), medios estatales y acceso de la prensa. | 5 | 826 | **vencida** |
-| `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 797 | ok |
+| `05_Banco_Central/` | Eje Banco Central (15%) — financiamiento al Tesoro y letras intransferibles (balance BCRA), designación del Presidente (estado mantenido) y respeto de la Carta Orgánica; más el radar BORA de la Presidencia. | 5 | 822 | ok |
 | `02_Poder_Legislativo/` | Eje Legislativo (20%) — calidad normativa (leyes vs simbólicos), eficacia de control (art. 101, informes JGM), costo del Congreso y cumplimiento de sesiones. | 4 | 739 | **vencida** |
-| `07_Radar_Nombramientos/` | Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces por día) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo. | 1 | 357 | ok |
+| `07_Radar_Nombramientos/` | Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces por día) — detecta ALTAS y BAJAS de jueces titulares leyendo el cuerpo de los decretos y las commitea a los CSV puente del repo. | 1 | 382 | ok |
 | `archivos_borrar\_retirados_20260819/` | _sin describir_ | 3 | 286 | — |
 | `06_Historico/` | MIA Núcleo — serie larga comparable (anual 2003+, mensual 2020+) con las variables `nucleo: true` de variables.yaml; sus niveles NO coinciden con el índice pleno. | 2 | 190 | **vencida** |
+| `.github\workflows/` | _sin describir_ | 2 | 126 | — |
 | `./` | Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa). | 1 | 121 | ok |
-| `.github\workflows/` | _sin describir_ | 2 | 121 | — |
 
 ## Puntos de entrada
 
@@ -108,10 +108,10 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 | `03_Poder_Judicial\padron_judicial.py` | 460 | 0 | `session`, `_read_csv_resilient`, `_snapshot_date`, `_es_jueces` |
 | `03_Poder_Judicial\scraper_05_cobertura_judicial.py` | 422 | 0 | `session`, `_read_csv_resilient`, `_tasa`, `_snapshot_date` |
 | `01_Poder_Ejecutivo\scraper_01_dnu_leyes.py` | 389 | 0 | `DNULeyesScraper`, `main` |
-| `07_Radar_Nombramientos\radar_nombramientos.py` | 357 | 0 | `normalizar`, `es_candidata`, `_fecha_de_url`, `get_con_reintentos` |
+| `07_Radar_Nombramientos\radar_nombramientos.py` | 382 | 0 | `normalizar`, `es_candidata`, `_fecha_de_url`, `get_con_reintentos` |
 | `00_Comun\generar_reporte_mensual.py` | 336 | 0 | `fmt`, `signo`, `mes_label`, `graficos` |
+| `05_Banco_Central\radar_bcra.py` | 304 | 0 | `normaliza`, `get_con_reintentos`, `_fecha_de_url`, `obtener_lista_bora` |
 | `01_Poder_Ejecutivo\scraper_16_atn.py` | 283 | 0 | `session`, `_to_num`, `atn_anual`, `atn_mensual_share` |
-| `05_Banco_Central\radar_bcra.py` | 279 | 0 | `normaliza`, `get_con_reintentos`, `_fecha_de_url`, `obtener_lista_bora` |
 
 ## Flujo interno
 

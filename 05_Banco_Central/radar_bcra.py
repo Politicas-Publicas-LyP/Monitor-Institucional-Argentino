@@ -94,10 +94,16 @@ def obtener_lista_bora(fecha_compacta: str | None = None):
     return normas, True
 
 
-def cuerpo_norma(url: str) -> str:
+# Fichas candidatas que NO se pudieron leer (proxy/BORA caído): si queda alguna, el radar no
+# concluye "sin eventos": termina con exit 1 (fallar avisando) y se reintenta en la próxima corrida.
+FICHAS_SIN_LEER: list = []
+
+
+def cuerpo_norma(url: str):
+    """Cuerpo del aviso, o None si no se pudo LEER la ficha."""
     r = get_con_reintentos(url, timeout=20, intentos=2, espera=4)
     if r is None or r.status_code != 200:
-        return ""
+        return None
     t = re.sub(r"<[^>]+>", " ", r.text)
     t = re.sub(r"\s+", " ", t)
     ini = t.find("Ver texto del aviso")
@@ -179,7 +185,11 @@ def _procesar(normas, hoy, fecha_filtrar=None):
     for n in cand:
         if n["url"] in vistas:
             continue
-        tn = normaliza(f"{n['titulo']} {cuerpo_norma(n['url'])}")
+        cuerpo = cuerpo_norma(n["url"])
+        if cuerpo is None:
+            FICHAS_SIN_LEER.append(n["url"])
+            continue
+        tn = normaliza(f"{n['titulo']} {cuerpo}")
         det = detectar(tn)
         if det:
             evento, acuerdo, valida, persona = det
@@ -190,9 +200,24 @@ def _procesar(normas, hoy, fecha_filtrar=None):
     return filas
 
 
+def _cierre():
+    """exit 1 si quedaron fichas candidatas sin leer: no se puede concluir 'sin eventos'."""
+    if FICHAS_SIN_LEER:
+        print(f"FALLO: no se pudo leer {len(FICHAS_SIN_LEER)} ficha(s) que mencionan al BCRA; el resultado es "
+              f"PARCIAL (no se concluye 'sin eventos'). Se reintenta en la próxima corrida:")
+        for u in FICHAS_SIN_LEER:
+            print(f"   - {u}")
+        return 1
+    return 0
+
+
 def _reportar(filas):
     if not filas:
-        print("  Sin eventos de la Presidencia del BCRA."); return
+        if FICHAS_SIN_LEER:
+            print("  Sin eventos en las fichas leídas (hay fichas sin leer, ver abajo).")
+        else:
+            print("  Sin eventos de la Presidencia del BCRA.")
+        return
     append_filas(filas)
     sello = {"si": "✅ VÁLIDA (acuerdo del Senado)", "no": "⛔ NO válida (en comisión, sin Senado)",
              "revisar": "❓ revisar acuerdo", "": ""}
@@ -215,7 +240,7 @@ def escanear(fecha=None):
         print("FALLO: no se pudo leer el BORA (no se concluye 'sin novedades')."); return 1
     print(f"  {len(normas)} normas; {sum(1 for n in normas if CAND_TITULO.search(normaliza(n['titulo'])))} mencionan al BCRA.")
     _reportar(_procesar(normas, hoy, fecha_filtrar=d.isoformat()))
-    return 0
+    return _cierre()
 
 
 def escanear_historico(desde, hasta):
@@ -235,7 +260,7 @@ def escanear_historico(desde, hasta):
             time.sleep(DELAY_DIA)
         d += timedelta(days=1)
     _reportar(todas)
-    return 0
+    return _cierre()
 
 
 def test():

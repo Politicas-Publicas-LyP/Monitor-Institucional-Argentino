@@ -117,11 +117,18 @@ def obtener_lista_bora(fecha_compacta: str | None = None):
     return normas, True
 
 
+# Fichas candidatas que NO se pudieron leer en esta corrida (proxy/BORA caído). Si queda alguna,
+# el radar NO concluye "sin novedades": termina con exit 1 (fallar avisando) y la próxima corrida
+# reintenta (lo no detectado no se persiste, así que se vuelve a leer).
+FICHAS_SIN_LEER: list[str] = []
+
+
 def obtener_texto_norma(url):
-    """Cuerpo del aviso (entre 'Ver texto del aviso' y 'Compartir por email')."""
+    """Cuerpo del aviso (entre 'Ver texto del aviso' y 'Compartir por email').
+    Devuelve None si no se pudo LEER la ficha (distinto de una ficha leída sin contenido útil)."""
     r = get_con_reintentos(url, timeout=20, intentos=2, espera=4)
     if r is None or r.status_code != 200:
-        return ""
+        return None
     try:
         soup = BeautifulSoup(r.text, "html.parser")
         for tag in soup(["script", "style", "nav", "footer", "header", "noscript"]):
@@ -136,7 +143,7 @@ def obtener_texto_norma(url):
         return tp[ini:fin].strip()
     except Exception as e:  # noqa: BLE001
         print(f"  parseo {url}: {e}")
-        return ""
+        return None
 
 
 def detectar(texto_norm: str):
@@ -213,6 +220,9 @@ def procesar(normas, hoy, fecha_filtrar: str | None = None):
         if n["url"] in vistas:
             continue
         cuerpo = obtener_texto_norma(n["url"])
+        if cuerpo is None:
+            FICHAS_SIN_LEER.append(n["url"])
+            continue
         tn = normalizar(f"{n['titulo']} {cuerpo}")
         tipo = "Decreto" if "DECRETO" in normalizar(n["titulo"]) else "Otro"
         fpub = n.get("fecha") or fecha_filtrar or hoy
@@ -252,7 +262,7 @@ def escanear(fecha: str | None = None):
         print("  Aviso: 0 normas — puede que la edición de hoy aún no esté publicada."); return 0
     altas, bajas = procesar(normas, hoy, fecha_filtrar=iso)
     _reportar(altas, bajas)
-    return 0
+    return _cierre()
 
 
 def escanear_historico(desde: str, hasta: str):
@@ -278,12 +288,27 @@ def escanear_historico(desde: str, hasta: str):
         time.sleep(DELAY_DIA)
         d += timedelta(days=1)
     _reportar(todas_a, todas_b)
+    return _cierre()
+
+
+def _cierre():
+    """exit 1 si quedaron fichas candidatas sin leer: no se puede concluir 'sin novedades'."""
+    if FICHAS_SIN_LEER:
+        print(f"FALLO: no se pudo leer {len(FICHAS_SIN_LEER)} ficha(s) candidata(s); el resultado es "
+              f"PARCIAL (no se concluye 'sin novedades'). Se reintenta en la próxima corrida:")
+        for u in FICHAS_SIN_LEER:
+            print(f"   - {u}")
+        return 1
     return 0
 
 
 def _reportar(altas, bajas):
     if not altas and not bajas:
-        print("  Sin novedades judiciales (altas/bajas)."); return
+        if FICHAS_SIN_LEER:
+            print("  Sin novedades en las fichas leídas (hay fichas sin leer, ver abajo).")
+        else:
+            print("  Sin novedades judiciales (altas/bajas).")
+        return
     if altas:
         append_filas(altas, CSV_PUENTE)
         na = sum(1 for f in altas if f["confianza"] == "ALTA")

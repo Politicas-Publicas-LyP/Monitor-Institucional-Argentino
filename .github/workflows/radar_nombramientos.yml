@@ -64,6 +64,8 @@ jobs:
           echo "Ejecutando: radar_nombramientos.py $ARGS"
           python "07_Radar_Nombramientos/radar_nombramientos.py" $ARGS
       - name: Correr radar Presidencia BCRA (alerta)
+        # Corre aunque el radar judicial haya fallado (lectura parcial): son independientes.
+        if: ${{ !cancelled() }}
         env:
           DESDE: ${{ github.event.inputs.desde }}
           HASTA: ${{ github.event.inputs.hasta }}
@@ -74,6 +76,9 @@ jobs:
           echo "Ejecutando: radar_bcra.py $ARGS"
           python "05_Banco_Central/radar_bcra.py" $ARGS
       - name: Persistir CSV puente (si cambió)
+        # También tras un fallo: lo detectado antes de la ficha ilegible no se pierde.
+        # El job igual queda en rojo (fallar avisando).
+        if: ${{ !cancelled() }}
         run: |
           git config user.name  "radares-bora[bot]"
           git config user.email "radares-bora@users.noreplace.github.com"

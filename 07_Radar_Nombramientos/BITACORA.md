@@ -1,6 +1,6 @@
 # Bitácora — Radar de Nombramientos (BORA)
 
-<!-- huella: 9b96343442a2 -->
+<!-- huella: b28e1e338cab -->
 
 > **Bitácora del eje.** Registrar acá cada cambio con su fecha. Es la fuente para saber el
 > estado de cada variable sin leer el código. Mantener «Pendientes» al día. Antes de editar,
@@ -28,6 +28,12 @@ Resumen: Radar del BORA (GitHub Actions vía proxy de Cloudflare, L–V 3 veces 
 - **Pendientes:** verificar la 1ª corrida real por el proxy (workflow_dispatch) y mirar 2-3 días hábiles; pendiente M3 (alerta de "última fecha escaneada").
 
 ## Registro de cambios
+- 2026-11-11 — **Fallar avisando también con fichas ilegibles.** Primera corrida real por el proxy: leyó la lista
+  (70 normas) pero una ficha candidata no conectó en ningún lector y el radar igual dijo «Sin novedades».
+  Ahora `obtener_texto_norma` devuelve `None` si no pudo LEER la ficha; el radar lista las fichas sin leer, NO concluye
+  «sin novedades» y sale con exit 1 (lo no detectado no se persiste: la corrida siguiente reintenta). El workflow corre el
+  radar BCRA y persiste los CSV aunque el radar judicial falle (`if: !cancelled()`); el job queda en rojo igual.
+  (La ficha de esa corrida —Decreto 1349/2026, hidroeléctricas— revisada a mano: no era relevante.)
 - 2026-11-11 — **Radar caído desde 2026-10-22**: el BORA dejó de responder a los runners de GitHub
   (ConnectTimeout en los 4 reintentos; 14 corridas fallidas seguidas, último commit de radares 2026-09-28).
   Fix: `00_Comun/bora_proxy.py` (lectura por el Worker de Cloudflare `bora-proxy-sam`, rotando lectores, con
