@@ -8,7 +8,7 @@
 
 Es el unico archivo del proyecto que hace falta leer para empezar. Para ubicar algo concreto: `python3 .mapa/buscar.py "<termino>"` devuelve archivo y linea sin abrir nada. Recien despues abrir los archivos que salgan, y solo esos.
 
-Rama `main` — ultimo commit: 2026-11-11 036525d Merge branch 'fix/atn-bugs-repo-slug-mapa-modelo' · **hay cambios sin commitear**
+Rama `main` — ultimo commit: 2026-11-11 48ce204 Calidad Normativa: no cachear valores del fallback; reporte con colchÃ³n 2022-01 · **hay cambios sin commitear**
 
 ## Donde buscar que
 
@@ -129,16 +129,16 @@ Ordenados por cuantos otros archivos dependen de ellos. Tocar uno de arriba tien
 
 Segun el historial de git. Si vas a cambiar uno, mira el otro.
 
-- `.mapa/mapa.json` + `MAPA.md` (13 commits)
+- `.mapa/mapa.json` + `MAPA.md` (14 commits)
 - `output/_alertas_validacion.md` + `output/mia_reporte.md` (7 commits)
 - `.github/workflows/radar_nombramientos.yml` + `07_Radar_Nombramientos/radar_nombramientos.py` (4 commits)
 - `07_Radar_Nombramientos/LEEME.md` + `07_Radar_Nombramientos/radar_nombramientos.py` (4 commits)
 - `correr_mensual.sh` + `output/_alertas_validacion.md` (4 commits)
+- `00_Comun/BITACORA.md` + `00_Comun/generar_reporte_mensual.py` (3 commits)
 - `.github/workflows/radar_nombramientos.yml` + `05_Banco_Central/radar_bcra.py` (3 commits)
 - `.github/workflows/radar_nombramientos.yml` + `07_Radar_Nombramientos/BITACORA.md` (3 commits)
 - `05_Banco_Central/BITACORA.md` + `07_Radar_Nombramientos/BITACORA.md` (3 commits)
 - `05_Banco_Central/radar_bcra.py` + `07_Radar_Nombramientos/BITACORA.md` (3 commits)
-- `05_Banco_Central/radar_bcra.py` + `07_Radar_Nombramientos/radar_nombramientos.py` (3 commits)
 
 ## Fuentes externas
 
