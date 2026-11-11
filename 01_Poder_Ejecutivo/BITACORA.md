@@ -60,6 +60,8 @@ Resumen: Eje Ejecutivo (30%) — DNU vs Leyes (InfoLEG), discrecionalidad presup
   correr `--diagnostico <año>` y revisar a mano — puede ser otra reorganización ministerial.
 
 ## Registro de cambios
+- 2026-11-11 — Corrida de sep+oct: el ATN de 2026-09 (share 0,00226) y 2026-10 (0,00109) se observó por primera vez
+  y quedó en `atn_obs_mensual.csv` (store inmutable; el mes en curso, nov, no se persiste). Anual 2026: 0,1531% del gasto.
 - 2026-09-18 — **ATN: fallback por código de estructura programática para 2003-2016.**
   Los `--diagnostico` de 2005/2010/2015 no encontraron ninguna etiqueta de texto reconocible
   para el ATN en esos ejercicios (confirmado luego para los 14 años 2003-2016). Investigación

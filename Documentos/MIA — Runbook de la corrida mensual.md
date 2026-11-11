@@ -5,7 +5,7 @@ Es el plano para automatizarla en el server propio. La corrida **solo calcula el
 índice**: es determinística y auditable, sin IA en el valor, y **no publica ni commitea
 nada de forma automática** — el equipo revisa las alertas de QA y publica a mano.
 
-_Última revisión: 2026-07-06_
+_Última revisión: 2026-11-11_
 
 ## 1. Qué corre y dónde
 
@@ -42,8 +42,8 @@ El orquestador corre TODO en orden: scrapers → padrón judicial → cobertura 
 
 Parámetros fijos del modelo (no cambian mes a mes):
 
-- **DESDE = 2023-01** — colchón de 1 año para que el suavizado de 12m esté completo al
-  inicio publicado. El tramo 2023 se calcula pero **no se publica**.
+- **DESDE = 2022-01** — colchón de 2 años (ampliado de 1 el 2026-09-18) para que el suavizado de 12m
+  esté completo al inicio publicado, con margen. El tramo 2022-2023 se calcula pero **no se publica**.
 - **PUBLICAR = 2024-01** — inicio publicado (gestión Milei), ya suavizado.
 - **HASTA** — el mes que se calcula. Sin argumento = mes en curso (sale **provisional**).
   Con `AAAA-MM` = cierra ese mes (titular definitivo).
@@ -60,6 +60,19 @@ correr_mensual.bat 2026-06
 
 Antes de correr, traer el repo al día (para tomar los CSV puente del radar más frescos):
 `git pull`.
+
+### Notas operativas (2026-11-11)
+
+- **Desde PowerShell**, lanzar el orquestador con `& .\correr_mensual.bat 2026-10`. En algunos entornos
+  `cmd /c correr_mensual.bat` no lo encuentra; PowerShell sí.
+- **Antes de correr, revisar que el workflow de radares esté verde** (Actions): si falló varios días, los CSV
+  puente quedan viejos y la corrida los lee del `raw` de GitHub. Los radares leen el BORA por el proxy de
+  Cloudflare (el BORA bloquea a los runners de GitHub desde 2026-10-22); ver `07_Radar_Nombramientos/BITACORA.md`.
+- **El orquestador cierra (congela) todo mes anterior al en curso** en `mia_historico.csv`. Si hay que
+  reemplazar un mes ya congelado: `py 00_Comun/archivar_historico.py --reabrir AAAA-MM ...` (decisión humana).
+- **Si un scraper falla, el ensamblador usa el CSV más viejo de ese patrón como si fuera nuevo.** Revisar el
+  log (`Fallo:`, `Traceback`, `ERROR`) y re-correr solo ese paso ANTES de ensamblar. Ver el caso de sesiones
+  del 2026-11-11 (HCDN rediseñó su sitio) en `02_Poder_Legislativo/BITACORA.md`.
 
 ## 3. Salidas
 

@@ -75,6 +75,12 @@ Cobertura = independencia (titularidad) + funcional (vacantes sin cubrir) + fluj
 - **Pendientes:** —
 
 ## Registro de cambios
+- 2026-11-11 — Corrida de sep+oct: el padrón aplicó 173 eventos (el Consejo de la Magistratura aportó 123 designaciones,
+  18 ya estaban por el BORA) y mandó 1 a `padron_revision.csv` (baja del Decreto 1066/2026, sin cargo coincidente: revisar
+  a mano). OJO: la estimación del padrón solo pisa el STOCK del último mes del rango, así que `tasa_titular` pasa de 0,6325
+  (snapshot 2026-06-05, meses jun-sep) a 0,7958 en 2026-10: un escalón de +16 pts en un mes que en realidad se fue
+  acumulando desde junio. Sep (congelado) queda subestimado respecto de oct. Decisión de diseño pendiente: ¿aplicar el
+  estimado también a los meses posteriores al snapshot? Snapshot oficial más nuevo del dataset: 2026-06-05.
 - 2026-09-18 — **Padrón judicial: Consejo de la Magistratura como tercera fuente de altas.**
   Siguiendo la auditoría de las 18 variables del índice, se investigaron dos candidatos para
   mejorar el eje Judicial:

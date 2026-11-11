@@ -62,9 +62,9 @@ el BORA es accesible también desde el exterior (por eso el radar corre en GitHu
 
 ```
 # 1) Correr los scrapers del mes (ejemplo, cobertura judicial)
-py "03_Poder_Judicial/scraper_05_cobertura_judicial.py" --desde 2023-01 --hasta 2026-06
+py "03_Poder_Judicial/scraper_05_cobertura_judicial.py" --desde 2022-01 --hasta 2026-06
 # 2) Ensamblar el índice
-py "00_Comun/icia_ensamblado.py" --desde 2023-01 --hasta 2026-05
+py "00_Comun/icia_ensamblado.py" --desde 2022-01 --hasta 2026-05
 # 3) (Opcional) Validar frescura y contratos
 py "00_Comun/validar.py"
 ```

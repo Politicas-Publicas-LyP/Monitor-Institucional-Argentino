@@ -1,11 +1,11 @@
 # Bitácora — Raíz del proyecto
 
-<!-- huella: e14e89aa7262 -->
+<!-- huella: b4c62b2b395f -->
 
 > **Bitácora de la raíz.** Registrar acá los cambios de orquestación y régimen de trabajo.
 > Antes de editar, hacé *pull*; al terminar, *commit + push* (ver AGENTS.md).
 
-_Última revisión: 2026-08-19_
+_Última revisión: 2026-11-11_
 
 Resumen: Raíz del repo — orquestadores de la corrida mensual (bat/sh), workflow de los radares del BORA, régimen de trabajo (README/AGENTS) y el mapa vivo del proyecto (MAPA.md/.mapa).
 
@@ -44,11 +44,21 @@ Resumen: Raíz del repo — orquestadores de la corrida mensual (bat/sh), workfl
 
 ## Proximo paso
 
-Pushear las ramas pendientes (autenticación de `gh` todavía sin resolver en esta máquina) y decidir
-si se promueve el fallback de Calidad Normativa (Datos Abiertos de HCDN) a fuente primaria — ver
+Pushear `main` desde GitHub Desktop (las credenciales de Git de esta máquina no tienen permiso de escritura) y, cuando HCDN
+publique su nueva versión, repetir Calidad Normativa y revisar si el fallback de Datos Abiertos sigue vigente — ver
 `02_Poder_Legislativo/BITACORA.md`.
 
 ## Registro de cambios
+
+- 2026-11-11 — **Corrida mensual de septiembre y octubre 2026 (cierre)** desde esta máquina con IP AR
+  (`& .\correr_mensual.bat 2026-10`; rango 2022-01..2026-10, publicado desde 2024-01). **MIA sep = 54,66 · oct = 55,47**
+  (cobertura_vars=18; `mia_historico.csv`: 34 meses cerrados, agosto idéntico = 54,80). Reabiertos a propósito los 12
+  meses de 2024 (colchón 2022: +1,6 pts en ene-24, ver ADR 0004) y sep/oct (recalculados tras reparar sesiones).
+  Incidentes: sesiones (HCDN rediseñó su sitio, reparado) y Calidad Normativa sin dato en sep/oct por la caída de HCDN
+  (no afecta el valor) — ver `02_Poder_Legislativo/BITACORA.md`. Radares: el workflow de Actions estuvo caído desde
+  2026-10-22 (el BORA bloquea a los runners de GitHub): ahora leen por el proxy de Cloudflare (`00_Comun/bora_proxy.py`);
+  hueco 28-sep..11-nov recuperado a mano (1 alta, 0 bajas, 0 eventos BCRA). Pendiente humano: lectura institucional,
+  confirmar BCRA y acreditaciones de prensa, informe JGM >N°145 (Eficacia de Control, 196 días sin informe).
 
 - 2026-09-18 — **Colchón de la corrida mensual ampliado de 1 a 2 años** (`DESDE=2022-01` en vez de
   `2023-01`, en `correr_mensual.bat`/`.sh`): un componente cuya media móvil de 12 meses no llegaba

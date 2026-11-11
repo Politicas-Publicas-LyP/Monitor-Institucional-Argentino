@@ -1,6 +1,6 @@
 # scripts/
 
-<!-- huella: 94875667b5c2 -->
+<!-- huella: 92ab3ebf415f -->
 
 Resumen: Herramientas del mapa vivo del repo (mapa-de-proyectos): indexador que genera MAPA.md/.mapa y hook pre-commit opcional.
 
